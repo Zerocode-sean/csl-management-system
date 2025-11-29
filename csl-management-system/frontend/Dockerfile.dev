@@ -1,0 +1,20 @@
+# Development Dockerfile for Frontend
+FROM node:lts-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies (including devDependencies for Vite)
+RUN npm install
+
+# Copy source code (will be overridden by volume mount in docker-compose)
+COPY . .
+
+# Expose Vite dev server port
+EXPOSE 3000
+
+# Run Vite development server with HMR
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

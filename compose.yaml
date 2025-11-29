@@ -1,0 +1,10 @@
+services:
+  cslfrontend:
+    image: cslfrontend
+    build:
+      context: csl-management-system/frontend
+      dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: production
+    ports:
+      - 3000:3000

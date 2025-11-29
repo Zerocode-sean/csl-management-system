@@ -1,0 +1,14 @@
+.error-banner {
+  background: #ffe5e5;
+  color: #b00020;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.error-message {
+  flex: 1;
+}

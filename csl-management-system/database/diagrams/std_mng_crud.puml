@@ -1,0 +1,56 @@
+```mermaid
+flowchart TD
+    A[Start: Admin Selects Student Management] --> B{Select Action}
+    B -->|Create| C[Display Registration Form]
+    C --> D[Enter Name, Email, Mobile, Address]
+    D --> E{Validate Input}
+    E -->|Invalid| F[Show Validation Errors]
+    F --> C
+    E -->|Valid| G{Email Already Exists?}
+    G -->|Yes| H[Display Error: Duplicate Email]
+    H --> C
+    G -->|No| I[Save Student to DB]
+    I --> J[Log Audit Event]
+    J --> K[Display Success]
+    K --> L[Return to Student List]
+    
+    B -->|Read/View| M[Query All Active Students]
+    M --> N[Display Student List with Search]
+    N --> O{Select Student?}
+    O -->|Yes| P[Display Student Profile]
+    P --> Q[Show: Personal Info + Certificate History]
+    Q --> R{Action?}
+    R -->|Edit| S[Go to Update Flow]
+    R -->|View Certificates| T[Display Student's Certificates]
+    T --> P
+    R -->|Back| N
+    O -->|No| L
+    
+    B -->|Update| S
+    S --> U[Load Student Data]
+    U --> V[Modify Fields]
+    V --> W{Validate Changes}
+    W -->|Invalid| X[Show Errors]
+    X --> U
+    W -->|Valid| Y[Update DB]
+    Y --> Z[Log Audit Event]
+    Z --> AA[Display Success]
+    AA --> L
+    
+    B -->|Delete| AB[Select Student to Delete]
+    AB --> AC{Student Has Certificates?}
+    AC -->|Yes| AD[Display Warning: Cannot Permanently Delete]
+    AD --> AE[Soft Delete Only]
+    AE --> AF[Confirm Soft Delete]
+    AF --> AG{Confirmed?}
+    AG -->|No| L
+    AG -->|Yes| AH[Set deleted_at timestamp]
+    AH --> AI[Log Audit Event]
+    AI --> AJ[Display Success]
+    AJ --> L
+    AC -->|No| AK[Confirm Permanent Delete]
+    AK --> AL{Confirmed?}
+    AL -->|No| L
+    AL -->|Yes| AM[Delete from DB]
+    AM --> AI
+```

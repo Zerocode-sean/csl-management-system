@@ -1,0 +1,37 @@
+# .dockerignore
+# Ignore node_modules, build output, logs, and sensitive files
+node_modules/
+build/
+dist/
+logs/
+.env
+*.log
+Dockerfile*
+docker-compose*
+.git
+.gitignore
+README.md
+coverage/
+__pycache__/
+*.sqlite
+*.db
+*.pem
+*.crt
+*.key
+*.DS_Store
+.vscode/
+*.tgz
+*.zip
+*.tar
+*.tar.gz
+*.bak
+*.tmp
+*.swp
+*.swo
+*.lock
+frontend/node_modules/
+backend/node_modules/
+frontend/build/
+backend/build/
+frontend/dist/
+backend/dist/

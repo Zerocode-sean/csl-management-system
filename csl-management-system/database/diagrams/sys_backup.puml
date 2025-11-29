@@ -1,0 +1,40 @@
+```mermaid
+flowchart TD
+    A[Scheduled Backup Trigger Daily] --> B[Check Database Connection]
+    B --> C{Connection OK?}
+    C -->|No| D[Log Error]
+    D --> E[Alert Admin]
+    E --> F[End]
+    C -->|Yes| G[Execute pg_dump Command]
+    G --> H[Compress Backup File]
+    H --> I[Generate Filename: csl_backup_YYYYMMDD_HHMMSS.sql.gz]
+    I --> J[Upload to Cloud Storage]
+    J --> K{Upload Successful?}
+    K -->|No| D
+    K -->|Yes| L[Verify Backup Integrity]
+    L --> M{Integrity Check Pass?}
+    M -->|No| D
+    M -->|Yes| N[Log Success]
+    N --> O[Delete Backups Older than 30 days]
+    O --> F
+    
+    P[Recovery Trigger: Admin Request] --> Q[List Available Backups]
+    Q --> R[Admin Selects Backup]
+    R --> S[Confirm Recovery Overwrites Current Data]
+    S --> T{Confirmed?}
+    T -->|No| U[Cancel Recovery]
+    U --> F
+    T -->|Yes| V[Stop Application Services]
+    V --> W[Download Backup from Cloud]
+    W --> X[Decompress Backup File]
+    X --> Y[Drop Current Database Caution]
+    Y --> Z[Restore from Backup File]
+    Z --> AA{Restore Successful?}
+    AA -->|No| AB[Log Critical Error]
+    AB --> AC[Manual Intervention Required]
+    AC --> F
+    AA -->|Yes| AD[Restart Services]
+    AD --> AE[Verify Application Functionality]
+    AE --> AF[Log Recovery Event]
+    AF --> F
+```

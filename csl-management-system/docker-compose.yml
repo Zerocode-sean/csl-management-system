@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: csl-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-csl_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-csl_password}
+      POSTGRES_DB: ${DB_NAME:-csl_database}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/schemas:/schemas
+      - ./database/seeds:/seeds
+      - ./database/scripts:/scripts
+    networks:
+      - csl-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-csl_user} -d ${DB_NAME:-csl_database}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (Development)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: csl-backend-dev
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-csl_user}
+      DB_PASSWORD: ${DB_PASSWORD:-csl_password}
+      DB_NAME: ${DB_NAME:-csl_database}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+    volumes:
+      # Mount source code for hot reload
+      - ./backend/src:/app/src
+      - ./backend/logs:/app/logs
+      # Prevent node_modules from being overwritten
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - csl-network
+
+  # Frontend (Development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: csl-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: /api/v1
+      VITE_APP_NAME: ${VITE_APP_NAME:-CSL Management System}
+      VITE_BACKEND_URL: http://backend:5000
+    volumes:
+      # Mount source code for HMR
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      # Prevent node_modules from being overwritten
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - csl-network
+
+networks:
+  csl-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

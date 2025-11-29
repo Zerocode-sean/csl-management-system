@@ -1,0 +1,49 @@
+```mermaid
+flowchart TD
+    A[Start: Admin Selects Course Management] --> B{Select Action}
+    B -->|Create| C[Display Create Form]
+    C --> D[Enter Code, Title, Description, Duration]
+    D --> E{Validate Input}
+    E -->|Invalid| F[Show Validation Errors]
+    F --> C
+    E -->|Valid| G{Code Already Exists?}
+    G -->|Yes| H[Display Error: Duplicate Code]
+    H --> C
+    G -->|No| I[Save Course to DB]
+    I --> J[Log Audit Event]
+    J --> K[Display Success]
+    K --> L[Return to Course List]
+    
+    B -->|Read/View| M[Query All Courses]
+    M --> N[Display Course List with Search/Filter]
+    N --> O{Select Course?}
+    O -->|Yes| P[Display Course Details]
+    P --> Q{Edit or Back?}
+    Q -->|Edit| R[Go to Update Flow]
+    Q -->|Back| N
+    O -->|No| L
+    
+    B -->|Update| R
+    R --> S[Load Course Data into Form]
+    S --> T[Modify Fields]
+    T --> U{Validate Changes}
+    U -->|Invalid| V[Show Errors]
+    V --> S
+    U -->|Valid| W[Update DB]
+    W --> X[Log Audit Event]
+    X --> Y[Display Success]
+    Y --> L
+    
+    B -->|Delete| Z[Select Course to Delete]
+    Z --> AA{Course Has Active Certificates?}
+    AA -->|Yes| AB[Display Warning: Cannot Delete]
+    AB --> AC[Suggest Deactivate Instead]
+    AC --> L
+    AA -->|No| AD[Confirm Deletion]
+    AD --> AE{Confirmed?}
+    AE -->|No| L
+    AE -->|Yes| AF[Soft Delete set deleted_at]
+    AF --> AG[Log Audit Event]
+    AG --> AH[Display Success]
+    AH --> L
+```
