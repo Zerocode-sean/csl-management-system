@@ -264,21 +264,26 @@ router.post('/',
       });
     }
 
-    // Use the actual DB columns
+    // Debug logging
+    console.log('DEBUG: Received create student request body:', JSON.stringify(req.body, null, 2));
+
+    // Map frontend fields to backend DTO
     const studentData: CreateStudentDTO = {
-      student_id: req.body.student_id,
-      first_name: req.body.first_name,
-      last_name: req.body.last_name,
+      student_id: req.body.student_custom_id || req.body.student_id,
+      first_name: req.body.name ? req.body.name.split(' ')[0] : '',
+      last_name: req.body.name ? req.body.name.split(' ').slice(1).join(' ') || req.body.name.split(' ')[0] : '',
       email: req.body.email,
-      phone: req.body.mobile || null,
+      phone: req.body.phone || req.body.mobile || null,
       address: req.body.address || null,
       date_of_birth: req.body.date_of_birth || null,
       status: req.body.status || null,
       profile_picture: req.body.profile_picture || null,
-      grade: req.body.grade || null,
-      institution: req.body.institution || null,
+      grade: req.body.current_grade || req.body.grade || null,
+      institution: req.body.home_institution || req.body.institution || null,
       course_id: req.body.course_id || null
     };
+
+    console.log('DEBUG: Mapped studentData for repository:', JSON.stringify(studentData, null, 2));
 
     const student = await studentRepo.create(studentData);
 
@@ -342,10 +347,15 @@ router.put('/:id',
     param('id').isInt({ min: 1 }).toInt(),
     body('first_name').optional().isString().trim().isLength({ min: 2, max: 50 }),
     body('last_name').optional().isString().trim().isLength({ min: 2, max: 50 }),
+    body('name').optional().isString().trim().isLength({ min: 2, max: 100 }),
     body('email').optional().isEmail().normalizeEmail(),
     body('phone').optional().isMobilePhone('any'),
     body('address').optional().isString().trim().isLength({ max: 500 }),
-    body('status').optional().isIn(['active', 'graduated', 'suspended', 'withdrawn'])
+    body('status').optional().isIn(['active', 'graduated', 'suspended', 'withdrawn']),
+    body('profilePicture').optional().isString(),
+    body('profile_picture').optional().isString(),
+    body('institution').optional().isString().trim(),
+    body('grade').optional().isString().trim()
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
@@ -370,14 +380,27 @@ router.put('/:id',
       }
     }
 
-    const updateData: UpdateStudentDTO = {
-      first_name: req.body.first_name,
-      last_name: req.body.last_name,
-      email: req.body.email,
-      phone: req.body.phone,
-      address: req.body.address,
-      status: req.body.status as StudentStatus
-    };
+    const updateData: UpdateStudentDTO = {};
+    
+    if (req.body.first_name) updateData.first_name = req.body.first_name;
+    if (req.body.last_name) updateData.last_name = req.body.last_name;
+    
+    // Handle 'name' field from frontend
+    if (req.body.name) {
+      updateData.first_name = req.body.name.split(' ')[0];
+      updateData.last_name = req.body.name.split(' ').slice(1).join(' ') || req.body.name.split(' ')[0];
+    }
+
+    if (req.body.email) updateData.email = req.body.email;
+    if (req.body.phone) updateData.phone = req.body.phone;
+    if (req.body.address) updateData.address = req.body.address;
+    if (req.body.status) updateData.status = req.body.status;
+    
+    // Handle new fields
+    if (req.body.profile_picture) updateData.profile_picture = req.body.profile_picture;
+    if (req.body.profilePicture) updateData.profile_picture = req.body.profilePicture;
+    if (req.body.institution) updateData.institution = req.body.institution;
+    if (req.body.grade) updateData.grade = req.body.grade;
 
     try {
       const student = await studentRepo.update(studentId, updateData);

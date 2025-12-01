@@ -63,11 +63,14 @@ CREATE TABLE students (
     mobile VARCHAR(20) NOT NULL,
     address TEXT NOT NULL,
     date_of_birth DATE,
+    home_institution VARCHAR(200), -- Student's home institution or school
+    profile_picture TEXT, -- URL or base64 encoded profile picture
+    current_grade VARCHAR(20), -- Current academic grade or rating
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
-    CONSTRAINT students_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+    CONSTRAINT students_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'),
     CONSTRAINT students_custom_id_format CHECK (student_custom_id ~* '^CSL-[0-9]{4}-[0-9]{3}$')
 );
 

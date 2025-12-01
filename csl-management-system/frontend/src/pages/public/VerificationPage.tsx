@@ -35,32 +35,56 @@ const VerificationPage: React.FC = () => {
     if (!verificationCode.trim()) return;
 
     setIsLoading(true);
+    setResult(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      // Mock verification logic
-      if (verificationCode.toUpperCase() === 'VER-ABC123' || verificationCode.toUpperCase() === 'CSL-2024-001') {
+    try {
+      // Get backend URL from environment or use default
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+      
+      // Call verification API endpoint (public, no auth required)
+      const response = await fetch(`${apiUrl}/verification/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          csl_number: verificationCode.trim()
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success && data.data.valid) {
+        // Certificate is valid
+        const cert = data.data.certificate;
         setResult({
           isValid: true,
           certificate: {
-            certificateNumber: 'CSL-2024-001',
-            studentName: 'John Doe',
-            courseName: 'React Development Fundamentals',
-            instructor: 'Dr. Jane Smith',
-            issueDate: '2024-03-15',
-            expiryDate: '2026-03-15',
-            grade: 'A+',
-            institution: 'CSL Management System'
+            certificateNumber: cert.csl_number || verificationCode,
+            studentName: cert.student_name || 'Unknown',
+            courseName: cert.course_title || cert.course_name || 'Unknown Course',
+            instructor: cert.issued_by || 'Director',
+            issueDate: cert.issue_date || new Date().toISOString().split('T')[0],
+            grade: cert.grade,
+            institution: 'EMESA Research and Consultancy'
           }
         });
       } else {
+        // Certificate not found or invalid
         setResult({
           isValid: false,
-          error: 'Certificate not found or invalid verification code'
+          error: data.data?.message || data.message || 'Certificate not found or invalid verification code'
         });
       }
+    } catch (error) {
+      console.error('Verification error:', error);
+      setResult({
+        isValid: false,
+        error: 'Failed to verify certificate. Please check your connection and try again.'
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const reset = () => {
@@ -123,21 +147,6 @@ const VerificationPage: React.FC = () => {
               )}
             </div>
           </form>
-
-          {/* Example codes */}
-          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <p className="text-sm text-blue-300 mb-2">
-              <strong>Demo codes for testing:</strong>
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <code className="px-2 py-1 bg-blue-500/20 text-blue-200 rounded text-xs font-mono">
-                CSL-2024-001
-              </code>
-              <code className="px-2 py-1 bg-blue-500/20 text-blue-200 rounded text-xs font-mono">
-                VER-ABC123
-              </code>
-            </div>
-          </div>
         </div>
 
         {/* Loading State */}

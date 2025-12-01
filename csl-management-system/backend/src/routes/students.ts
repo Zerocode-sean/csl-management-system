@@ -103,6 +103,9 @@ router.get('/',
         s.address,
         s.date_of_birth,
         s.status,
+        s.profile_picture,
+        s.institution,
+        s.grade,
         s.created_at,
         s.updated_at,
         s.deleted_at,
@@ -111,7 +114,7 @@ router.get('/',
       FROM students s
       LEFT JOIN certificates c ON s.student_id = c.student_id
       ${whereClause}
-      GROUP BY s.student_id, s.student_custom_id, s.name, s.email, s.mobile, s.address, s.date_of_birth, s.status, s.created_at, s.updated_at, s.deleted_at
+      GROUP BY s.student_id, s.student_custom_id, s.name, s.email, s.mobile, s.address, s.date_of_birth, s.status, s.profile_picture, s.institution, s.grade, s.created_at, s.updated_at, s.deleted_at
       ORDER BY s.created_at DESC
       LIMIT $${paramIndex++} OFFSET $${paramIndex}
     `;
@@ -276,7 +279,10 @@ router.post('/',
     body('address').optional().isString().withMessage('Address must be a valid string'),
     body('date_of_birth').optional().isISO8601().withMessage('Date of birth must be a valid date (YYYY-MM-DD)'),
     body('student_custom_id').notEmpty().withMessage('Student ID is required').isLength({ max: 50 }).withMessage('Student ID must be less than 50 characters'),
-    body('course_id').optional().isInt().withMessage('Course ID must be a valid integer')
+    body('course_id').optional().isInt().withMessage('Course ID must be a valid integer'),
+    body('profile_picture').optional().isString(),
+    body('institution').optional().isString().trim(),
+    body('grade').optional().isString().trim()
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
@@ -287,7 +293,14 @@ router.post('/',
       })));
     }
 
+    console.log('DEBUG: students.ts POST / received body:', JSON.stringify(req.body, null, 2));
+
     const { name, email, phone, address, date_of_birth, student_custom_id, course_id } = req.body;
+    
+    // Handle field aliases
+    const profile_picture = req.body.profile_picture;
+    const institution = req.body.institution || req.body.home_institution;
+    const grade = req.body.grade || req.body.current_grade;
 
     // Check if email or student_custom_id already exists
     const existingResult = await query(
@@ -314,10 +327,10 @@ router.post('/',
       // Create student
       const result = await client.query(`
         INSERT INTO students (
-          name, email, mobile, address, date_of_birth, student_custom_id, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'active')
+          name, email, mobile, address, date_of_birth, student_custom_id, status, profile_picture, institution, grade
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8, $9)
         RETURNING *
-      `, [name, email, phone, address, date_of_birth, student_custom_id]);
+      `, [name, email, phone, address, date_of_birth, student_custom_id, profile_picture, institution, grade]);
 
       const student = result.rows[0];
 
@@ -420,7 +433,11 @@ router.put('/:id',
     body('phone').optional().isLength({ max: 20 }).withMessage('Phone must be less than 20 characters'),
     body('address').optional().isString().withMessage('Address must be a valid string'),
     body('date_of_birth').optional().isISO8601().withMessage('Date of birth must be a valid date (YYYY-MM-DD)'),
-    body('national_id').optional().isLength({ max: 50 }).withMessage('National ID must be less than 50 characters')
+    body('date_of_birth').optional().isISO8601().withMessage('Date of birth must be a valid date (YYYY-MM-DD)'),
+    body('national_id').optional().isLength({ max: 50 }).withMessage('National ID must be less than 50 characters'),
+    body('profile_picture').optional().isString(),
+    body('institution').optional().isString().trim(),
+    body('grade').optional().isString().trim()
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
@@ -432,7 +449,15 @@ router.put('/:id',
     }
 
     const { id } = req.params;
+    
+    console.log('DEBUG: students.ts PUT /:id received body:', JSON.stringify(req.body, null, 2));
+
     const { name, email, phone, address, date_of_birth, national_id } = req.body;
+    
+    // Handle field aliases
+    const profile_picture = req.body.profile_picture || req.body.profilePicture;
+    const institution = req.body.institution || req.body.home_institution;
+    const grade = req.body.grade || req.body.current_grade;
 
     // Get current student data
     const currentResult = await query(
@@ -495,6 +520,18 @@ router.put('/:id',
     if (national_id !== undefined) {
       updates.push(`national_id = $${paramIndex++}`);
       values.push(national_id);
+    }
+    if (profile_picture !== undefined) {
+      updates.push(`profile_picture = $${paramIndex++}`);
+      values.push(profile_picture);
+    }
+    if (institution !== undefined) {
+      updates.push(`institution = $${paramIndex++}`);
+      values.push(institution);
+    }
+    if (grade !== undefined) {
+      updates.push(`grade = $${paramIndex++}`);
+      values.push(grade);
     }
 
     if (updates.length === 0) {

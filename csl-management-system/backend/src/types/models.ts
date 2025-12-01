@@ -144,6 +144,9 @@ export interface UpdateStudentDTO {
   phone?: string;
   address?: string;
   status?: StudentStatus;
+  profile_picture?: string;
+  institution?: string;
+  grade?: string;
 }
 
 export interface CreateCourseDTO {

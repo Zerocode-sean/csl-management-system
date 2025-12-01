@@ -1,4 +1,5 @@
 
+// Force refresh
 import React, { useState, useEffect } from 'react';
 import { 
   MagnifyingGlassIcon, 
@@ -14,6 +15,7 @@ import ToastContainer from '../../components/ui/ToastContainer';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { ToastProps } from '../../components/ui/Toast';
 import { studentsService } from '../../services/studentsService';
+import { coursesService } from '../../services/coursesService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ErrorBanner from '../../components/ui/ErrorBanner';
 
@@ -116,10 +118,15 @@ const StudentsPage: React.FC = () => {
     const fetchCourses = async () => {
       setIsLoadingCourses(true);
       try {
-        const response = await studentsService.getAllCourses();
-        if (response.success && Array.isArray(response.data)) {
+        const response = await coursesService.getActiveCoursesForDropdown();
+        console.log('DEBUG: Courses response:', response);
+        if (response.success) {
+          // Handle both array directly or nested in data object
+          const coursesData = Array.isArray(response.data) ? response.data : (response.data as any).courses || [];
+          console.log('DEBUG: Parsed courses data:', coursesData);
+          
           // Map backend course data to frontend interface if needed, or use directly
-          const mappedCourses = response.data.map((c: any) => ({
+          const mappedCourses = coursesData.map((c: any) => ({
             id: c.course_id, // Map Integer ID
             code: c.code,
             title: c.title,
@@ -182,9 +189,9 @@ const StudentsPage: React.FC = () => {
           status: student.status ?? 'active',
           registrationDate: student.created_at ?? student.registration_date ?? student.registrationDate ?? new Date().toISOString().split('T')[0],
           lastActive: student.last_active ?? student.lastActive ?? '',
-          profilePicture: student.profilePicture ?? '',
-          institution: student.institution ?? '',
-          grade: student.grade ?? '',
+          profilePicture: student.profile_picture ?? student.profilePicture ?? '',
+          institution: student.institution ?? student.home_institution ?? '',
+          grade: student.grade ?? student.current_grade ?? '',
         }));
 
         setStudents(mappedStudents);
@@ -338,6 +345,9 @@ const StudentsPage: React.FC = () => {
         phone: newStudent.phone.trim(), // Fixed: was mobile
         address: newStudent.address.trim(),
         date_of_birth: newStudent.dateOfBirth || undefined,
+        home_institution: newStudent.institution.trim() || undefined,
+        profile_picture: newStudent.profilePicture || undefined,
+        current_grade: newStudent.grade || undefined,
         course_id: newStudent.courseId ? parseInt(newStudent.courseId) : undefined, // Send Integer ID
         status: newStudent.status
       });
@@ -356,6 +366,9 @@ const StudentsPage: React.FC = () => {
           studentId: student.student_custom_id || student.studentId || '',
           address: student.address || '',
           dateOfBirth: student.date_of_birth || student.dateOfBirth || '',
+          profilePicture: student.profile_picture || student.profilePicture || '',
+          institution: student.institution || student.home_institution || '',
+          grade: student.grade || student.current_grade || '',
           enrolledCourses: student.courses || student.enrolledCourses || [],
           certificates: student.certificates_count || student.certificates || 0,
           status: student.status || 'active',
@@ -1145,6 +1158,117 @@ const StudentsPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* Institution */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Home Institution
+                  </label>
+                  <input
+                    type="text"
+                    value={newStudent.institution}
+                    onChange={(e) => {
+                      setNewStudent({ ...newStudent, institution: e.target.value });
+                      if (formErrors.institution) {
+                        setFormErrors(prev => ({ ...prev, institution: '' }));
+                      }
+                    }}
+                    placeholder="e.g., University of Nairobi"
+                    className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border rounded-lg text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                      formErrors.institution 
+                        ? 'border-red-300 dark:border-red-600 focus:ring-red-500' 
+                        : 'border-slate-200 dark:border-slate-600 focus:ring-blue-500'
+                    }`}
+                    disabled={isSubmitting}
+                  />
+                  {formErrors.institution && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.institution}</p>
+                  )}
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    The institution this student is attached from for training
+                  </p>
+                </div>
+
+                {/* Profile Picture Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Profile Picture
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {/* Preview */}
+                    <div className="h-20 w-20 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center border-2 border-slate-300 dark:border-slate-600">
+                      {newStudent.profilePicture ? (
+                        <img 
+                          src={newStudent.profilePicture} 
+                          alt="Preview" 
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <UserCircleIcon className="h-12 w-12 text-slate-400" />
+                      )}
+                    </div>
+                    
+                    {/* Upload Button */}
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        id="addProfilePicture"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Validate file size (max 5MB)
+                            if (file.size > 5 * 1024 * 1024) {
+                              setFormErrors(prev => ({ ...prev, profilePicture: 'Image must be less than 5MB' }));
+                              return;
+                            }
+                            
+                            // Convert to base64
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setNewStudent({ ...newStudent, profilePicture: reader.result as string });
+                              if (formErrors.profilePicture) {
+                                setFormErrors(prev => ({ ...prev, profilePicture: '' }));
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
+                        disabled={isSubmitting}
+                      />
+                      <label
+                        htmlFor="addProfilePicture"
+                        className={`block w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border rounded-lg text-slate-700 dark:text-slate-300 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors ${
+                          formErrors.profilePicture 
+                            ? 'border-red-300 dark:border-red-600' 
+                            : 'border-slate-200 dark:border-slate-600'
+                        } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {newStudent.profilePicture ? 'Change Photo' : 'Upload Photo'}
+                      </label>
+                      {newStudent.profilePicture && (
+                        <button
+                          type="button"
+                          onClick={() => setNewStudent({ ...newStudent, profilePicture: '' })}
+                          disabled={isSubmitting}
+                          className="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors disabled:opacity-50"
+                        >
+                          Remove Photo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {formErrors.profilePicture && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.profilePicture}</p>
+                  )}
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Optional: Upload a profile photo (JPG, PNG, max 5MB)
+                  </p>
+                </div>
+
                 {/* Course Selection */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -1175,6 +1299,43 @@ const StudentsPage: React.FC = () => {
                   {formErrors.courseId && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.courseId}</p>
                   )}
+                </div>
+
+                {/* Grade */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Current Grade
+                  </label>
+                  <select
+                    value={newStudent.grade}
+                    onChange={(e) => {
+                      setNewStudent({ ...newStudent, grade: e.target.value });
+                      if (formErrors.grade) {
+                        setFormErrors(prev => ({ ...prev, grade: '' }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                      formErrors.grade 
+                        ? 'border-red-300 dark:border-red-600 focus:ring-red-500' 
+                        : 'border-slate-200 dark:border-slate-600 focus:ring-blue-500'
+                    }`}
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Not graded yet</option>
+                    <option value="A">A - Excellent (90-100%)</option>
+                    <option value="B">B - Good (80-89%)</option>
+                    <option value="C">C - Satisfactory (70-79%)</option>
+                    <option value="D">D - Pass (60-69%)</option>
+                    <option value="F">F - Fail (Below 60%)</option>
+                    <option value="I">I - Incomplete</option>
+                    <option value="W">W - Withdrawn</option>
+                  </select>
+                  {formErrors.grade && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.grade}</p>
+                  )}
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Student's performance grade during the training attachment
+                  </p>
                 </div>
 
                 {/* Status */}

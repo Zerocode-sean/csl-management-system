@@ -5,10 +5,12 @@ import {
   IssueCertificateDTO, 
   CertificateVerificationResult,
   CertificateSearchFilter,
-  PaginationOptions 
+  PaginationOptions,
+  CertificateStatus
 } from '../types/models';
 import { validateCertificateData } from '../utils/certificateUtils';
 import { logger } from '../utils/logger';
+import { PDFService } from './PDFService';
 
 /**
  * Enhanced Certificate Service
@@ -56,8 +58,47 @@ export class CertificateServiceV2 {
       throw new Error('Certificate already exists for this student and course');
     }
 
-    // Issue the certificate
+    // Issue the certificate (this creates the database record and generates CSL number)
     const certificate = await this.certificateRepo.issue(data, issuedBy);
+
+    // Generate PDF for the certificate
+    try {
+      logger.info('Generating PDF for certificate', { csl_number: certificate.csl_number });
+
+      // Get admin who issued the certificate for the PDF
+      // For now, we'll use a placeholder - in production, fetch from admin repository
+      const issuedByName = 'Director'; // TODO: Fetch actual admin name
+
+      const pdfResult = await PDFService.generateCertificatePDF({
+        student_name: `${student.first_name} ${student.last_name}`,
+        course_name: course.course_name,
+        course_code: course.course_code,
+        serial_number: certificate.csl_number,
+        issue_date: certificate.issue_date.toISOString(),
+        duration: Math.round(course.duration_hours / 30) || 0, // Convert hours to months approximation
+        issued_by: issuedByName
+      });
+
+      if (!pdfResult.success) {
+        logger.error('PDF generation failed, but certificate was created', {
+          csl_number: certificate.csl_number,
+          error: pdfResult.error
+        });
+        // Note: We don't throw here - certificate is still valid even without PDF
+        // The PDF can be regenerated later if needed
+      } else {
+        logger.info('PDF generated successfully', { 
+          csl_number: certificate.csl_number,
+          path: pdfResult.filePath 
+        });
+      }
+    } catch (pdfError) {
+      logger.error('Unexpected error during PDF generation', {
+        csl_number: certificate.csl_number,
+        error: pdfError
+      });
+      // Continue - certificate is still valid
+    }
 
     logger.info('Certificate issued successfully', {
       csl_number: certificate.csl_number,
@@ -145,11 +186,11 @@ export class CertificateServiceV2 {
       throw new Error('Certificate not found');
     }
 
-    if (certificate.status === 'revoked') {
+    if (certificate.status === CertificateStatus.REVOKED) {
       throw new Error('Certificate is already revoked');
     }
 
-    const updatedCert = await this.certificateRepo.updateStatus(id, 'revoked', revokedBy);
+    const updatedCert = await this.certificateRepo.updateStatus(id, CertificateStatus.REVOKED, revokedBy);
 
     logger.info('Certificate revoked', {
       csl_number: certificate.csl_number,

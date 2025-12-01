@@ -417,4 +417,79 @@ router.get('/stats', asyncHandler(async (req, res) => {
   });
 }));
 
+/**
+ * @swagger
+ * /certificates/{cslNumber}/download:
+ *   get:
+ *     summary: Download certificate PDF
+ *     tags: [Certificates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: cslNumber
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: CSL certificate number
+ *     responses:
+ *       200:
+ *         description: PDF file
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Certificate or PDF not found
+ */
+router.get('/:cslNumber/download',
+  [
+    param('cslNumber').isString().trim().notEmpty().withMessage('Valid CSL number is required')
+  ],
+  asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError('Validation failed', 400, errors.array().map((err: any) => ({
+        field: err.param,
+        message: err.msg
+      })));
+    }
+
+    const { cslNumber } = req.params;
+
+    // Verify certificate exists in database
+    const certResult = await query(
+      'SELECT csl_number FROM certificates WHERE csl_number = $1',
+      [cslNumber]
+    );
+
+    if (certResult.rows.length === 0) {
+      throw createError('Certificate not found', 404);
+    }
+
+    // Get PDF file path
+    const { PDFService } = await import('../services/PDFService');
+    const pdfPath = PDFService.getPDFPath(cslNumber!);
+    
+    // Check if PDF file exists
+    const pdfExists = await PDFService.pdfExists(cslNumber!);
+    if (!pdfExists) {
+      throw createError('PDF file not found. It may need to be regenerated.', 404);
+    }
+
+    // Send PDF file with absolute path
+    const path = await import('path');
+    const absolutePdfPath = path.resolve(pdfPath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${cslNumber}.pdf"`);
+    res.sendFile(absolutePdfPath);
+
+    logger.info(`PDF downloaded for CSL: ${cslNumber}`, {
+      admin_id: req.admin!.adminId,
+      ip: req.ip
+    });
+  })
+);
+
 export default router;
