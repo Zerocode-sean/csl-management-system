@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const certificateService_1 = require("../services/certificateService");
@@ -6,6 +39,7 @@ const auth_1 = require("../middleware/auth");
 const errorHandler_1 = require("../middleware/errorHandler");
 const express_validator_1 = require("express-validator");
 const connection_1 = require("../database/connection");
+const logger_1 = require("../utils/logger");
 const router = (0, express_1.Router)();
 // All certificate routes require authentication
 router.use(auth_1.authenticateToken);
@@ -70,12 +104,12 @@ router.get('/', [
         })));
     }
     const result = await certificateService_1.CertificateService.getCertificates({
-        page: req.query.page || 1,
-        limit: req.query.limit || 10,
-        status: req.query.status,
-        courseId: req.query.course_id,
-        studentId: req.query.student_id,
-        search: req.query.search
+        page: parseInt(req.query['page'], 10) || 1,
+        limit: parseInt(req.query['limit'], 10) || 10,
+        status: req.query['status'],
+        courseId: req.query['course_id'],
+        studentId: req.query['student_id'],
+        search: req.query['search']
     });
     res.json({
         success: true,
@@ -172,9 +206,9 @@ router.get('/:id', [
  *       409:
  *         description: Certificate already exists
  */
-router.post('/issue', (0, auth_1.authorizeRoles)('super_admin', 'admin', 'course_manager'), [
-    (0, express_validator_1.body)('student_id').isUUID().withMessage('Valid student ID is required'),
-    (0, express_validator_1.body)('course_id').isUUID().withMessage('Valid course ID is required')
+router.post('/generate', (0, auth_1.authorizeRoles)('super_admin', 'admin', 'course_manager'), [
+    (0, express_validator_1.body)('student_id').isInt().withMessage('Valid student ID is required'),
+    (0, express_validator_1.body)('course_id').isInt().withMessage('Valid course ID is required')
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -184,48 +218,25 @@ router.post('/issue', (0, auth_1.authorizeRoles)('super_admin', 'admin', 'course
         })));
     }
     const { student_id, course_id } = req.body;
-    const issued_by = req.admin.adminId;
-    // Verify student exists and is active
-    const studentResult = await (0, connection_1.query)('SELECT student_id, name, email FROM students WHERE student_id = $1 AND is_active = true', [student_id]);
-    if (studentResult.rows.length === 0) {
-        throw (0, errorHandler_1.createError)('Student not found or inactive', 404);
-    }
-    // Verify course exists and is active
-    const courseResult = await (0, connection_1.query)('SELECT course_id, course_name, course_code FROM courses WHERE course_id = $1 AND is_active = true', [course_id]);
-    if (courseResult.rows.length === 0) {
-        throw (0, errorHandler_1.createError)('Course not found or inactive', 404);
-    }
-    const certificate = await certificateService_1.CertificateService.issueCertificate({
+    const admin_id = parseInt(req.admin.adminId, 10);
+    logger_1.logger.info('Certificate generation requested', {
         student_id,
         course_id,
-        issued_by
+        admin_id
     });
-    // Log the action in audit logs
-    await (0, connection_1.query)(`
-      INSERT INTO audit_logs (
-        admin_id, action, table_name, record_id, 
-        new_values, ip_address, user_agent
-      ) VALUES ($1, 'CREATE', 'certificates', $2, $3, $4, $5)
-    `, [
-        issued_by,
-        certificate.certificate_id,
-        JSON.stringify({
-            csl_number: certificate.csl_number,
-            student_id: certificate.student_id,
-            course_id: certificate.course_id
-        }),
-        req.ip,
-        req.get('User-Agent')
-    ]);
+    // Use the new CertificateGeneratorService from cloud.md
+    const { CertificateGeneratorService } = await Promise.resolve().then(() => __importStar(require('../services/certificateGenerator.service')));
+    const result = await CertificateGeneratorService.generateCertificate(student_id, course_id, admin_id);
+    logger_1.logger.info('Certificate generated successfully', {
+        csl_number: result.cslNumber,
+        pdf_path: result.pdfPath
+    });
     res.status(201).json({
         success: true,
-        message: 'Certificate issued successfully',
+        message: 'Certificate generated successfully',
         data: {
-            certificate_id: certificate.certificate_id,
-            csl_number: certificate.csl_number,
-            student: studentResult.rows[0],
-            course: courseResult.rows[0],
-            issued_at: certificate.issued_at
+            csl_number: result.cslNumber,
+            pdf_url: `/api/v1/certificates/${result.cslNumber}/download`
         }
     });
 }));
@@ -272,9 +283,18 @@ router.patch('/:id/revoke', (0, auth_1.authorizeRoles)('super_admin', 'admin'), 
             message: err.msg
         })));
     }
-    const { id } = req.params;
-    const { reason } = req.body;
-    const revoked_by = req.admin.adminId;
+    const id = req.params['id'];
+    if (typeof id !== 'string' || !id) {
+        throw (0, errorHandler_1.createError)('Missing or invalid certificate ID', 400);
+    }
+    if (typeof id !== 'string' || !id) {
+        throw (0, errorHandler_1.createError)('Missing or invalid certificate ID', 400);
+    }
+    const reason = req.body.reason || 'No reason provided';
+    const revoked_by = req.admin?.adminId;
+    if (typeof revoked_by !== 'string' || !revoked_by) {
+        throw (0, errorHandler_1.createError)('Missing or invalid admin ID for revocation', 400);
+    }
     // Get certificate details before revoking
     const beforeResult = await (0, connection_1.query)('SELECT * FROM certificates WHERE certificate_id = $1', [id]);
     if (beforeResult.rows.length === 0) {
@@ -353,6 +373,67 @@ router.get('/stats', (0, errorHandler_1.asyncHandler)(async (req, res) => {
             },
             by_course: courseStats
         }
+    });
+}));
+/**
+ * @swagger
+ * /certificates/{cslNumber}/download:
+ *   get:
+ *     summary: Download certificate PDF
+ *     tags: [Certificates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: cslNumber
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: CSL certificate number
+ *     responses:
+ *       200:
+ *         description: PDF file
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Certificate or PDF not found
+ */
+router.get('/:cslNumber/download', [
+    (0, express_validator_1.param)('cslNumber').isString().trim().notEmpty().withMessage('Valid CSL number is required')
+], (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const errors = (0, express_validator_1.validationResult)(req);
+    if (!errors.isEmpty()) {
+        throw (0, errorHandler_1.createError)('Validation failed', 400, errors.array().map((err) => ({
+            field: err.param,
+            message: err.msg
+        })));
+    }
+    const { cslNumber } = req.params;
+    // Verify certificate exists in database
+    const certResult = await (0, connection_1.query)('SELECT csl_number FROM certificates WHERE csl_number = $1', [cslNumber]);
+    if (certResult.rows.length === 0) {
+        throw (0, errorHandler_1.createError)('Certificate not found', 404);
+    }
+    // Get PDF file path
+    const { PDFService } = await Promise.resolve().then(() => __importStar(require('../services/PDFService')));
+    const pdfPath = PDFService.getPDFPath(cslNumber);
+    // Check if PDF file exists
+    const pdfExists = await PDFService.pdfExists(cslNumber);
+    if (!pdfExists) {
+        throw (0, errorHandler_1.createError)('PDF file not found. It may need to be regenerated.', 404);
+    }
+    // Send PDF file with absolute path
+    const path = await Promise.resolve().then(() => __importStar(require('path')));
+    const absolutePdfPath = path.resolve(pdfPath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${cslNumber}.pdf"`);
+    res.sendFile(absolutePdfPath);
+    logger_1.logger.info(`PDF downloaded for CSL: ${cslNumber}`, {
+        admin_id: req.admin.adminId,
+        ip: req.ip
     });
 }));
 exports.default = router;

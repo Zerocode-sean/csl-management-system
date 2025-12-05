@@ -24,7 +24,7 @@ router.get('/dashboard', (0, errorHandler_1.asyncHandler)(async (req, res) => {
     // Get overview statistics
     const overviewResult = await (0, connection_1.query)(`
     SELECT 
-      (SELECT COUNT(*) FROM students WHERE is_active = true) as active_students,
+      (SELECT COUNT(*) FROM students WHERE is_active = true AND deleted_at IS NULL) as active_students,
       (SELECT COUNT(*) FROM courses WHERE is_active = true) as active_courses,
       (SELECT COUNT(*) FROM certificates WHERE status = 'active') as active_certificates,
       (SELECT COUNT(*) FROM certificates WHERE DATE(issued_at) = CURRENT_DATE) as certificates_issued_today,
@@ -41,7 +41,7 @@ router.get('/dashboard', (0, errorHandler_1.asyncHandler)(async (req, res) => {
       course.course_code,
       admin.name as issuer_name
     FROM certificates c
-    JOIN students s ON c.student_id = s.student_id
+    JOIN students s ON c.student_id = s.student_id AND s.deleted_at IS NULL
     JOIN courses course ON c.course_id = course.course_id
     JOIN admins admin ON c.issued_by = admin.admin_id
     ORDER BY c.issued_at DESC
@@ -206,13 +206,13 @@ router.get('/reports', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
             const certQuery = course_id
                 ? `SELECT c.*, s.name as student_name, co.course_name 
              FROM certificates c 
-             JOIN students s ON c.student_id = s.student_id 
+             JOIN students s ON c.student_id = s.student_id AND s.deleted_at IS NULL 
              JOIN courses co ON c.course_id = co.course_id 
              WHERE co.course_id = $${paramIndex} ${dateFilter.replace('created_at', 'c.issued_at')} 
              ORDER BY c.issued_at DESC`
                 : `SELECT c.*, s.name as student_name, co.course_name 
              FROM certificates c 
-             JOIN students s ON c.student_id = s.student_id 
+             JOIN students s ON c.student_id = s.student_id AND s.deleted_at IS NULL 
              JOIN courses co ON c.course_id = co.course_id 
              WHERE 1=1 ${dateFilter.replace('created_at', 'c.issued_at')} 
              ORDER BY c.issued_at DESC`;
@@ -229,7 +229,7 @@ router.get('/reports', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
             };
             break;
         case 'students':
-            const studentResult = await (0, connection_1.query)(`SELECT * FROM students WHERE 1=1 ${dateFilter} ORDER BY created_at DESC`, params);
+            const studentResult = await (0, connection_1.query)(`SELECT * FROM students WHERE deleted_at IS NULL ${dateFilter} ORDER BY created_at DESC`, params);
             reportData = {
                 students: studentResult.rows,
                 summary: {

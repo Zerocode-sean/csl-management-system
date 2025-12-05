@@ -17,6 +17,7 @@ const errorHandler = (err, req, res, next) => {
         success: false,
         message,
         errors: err.errors || [],
+        data: err.data,
         ...(process.env['NODE_ENV'] === 'development' && { stack: err.stack })
     });
 };
@@ -34,11 +35,14 @@ const notFoundHandler = (req, res, next) => {
     });
 };
 exports.notFoundHandler = notFoundHandler;
-const createError = (message, statusCode = 500, errors) => {
+const createError = (message, statusCode = 500, errors, data) => {
     const error = new Error(message);
     error.statusCode = statusCode;
     if (errors) {
         error.errors = errors;
+    }
+    if (data) {
+        error.data = data;
     }
     return error;
 };

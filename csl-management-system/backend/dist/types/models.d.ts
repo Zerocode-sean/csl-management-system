@@ -118,6 +118,11 @@ export interface CreateStudentDTO {
     date_of_birth?: string;
     address?: string;
     enrollment_date?: string;
+    status?: StudentStatus;
+    profile_picture?: string;
+    grade?: string;
+    institution?: string;
+    course_id?: number;
 }
 export interface UpdateStudentDTO {
     first_name?: string;
@@ -126,6 +131,9 @@ export interface UpdateStudentDTO {
     phone?: string;
     address?: string;
     status?: StudentStatus;
+    profile_picture?: string;
+    institution?: string;
+    grade?: string;
 }
 export interface CreateCourseDTO {
     course_code: string;

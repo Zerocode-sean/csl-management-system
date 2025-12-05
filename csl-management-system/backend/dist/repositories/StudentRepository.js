@@ -9,11 +9,12 @@ class StudentRepository {
      * Create a new student
      */
     async create(data) {
+        console.log('DEBUG: StudentRepository.create received data:', JSON.stringify(data, null, 2));
         const sql = `
       INSERT INTO students (
         student_id, first_name, last_name, email, phone, 
-        date_of_birth, address, enrollment_date, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        date_of_birth, address, profile_picture, institution, grade, enrollment_date, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
         const values = [
@@ -24,6 +25,9 @@ class StudentRepository {
             data.phone || null,
             data.date_of_birth ? new Date(data.date_of_birth) : null,
             data.address || null,
+            data.profile_picture || null,
+            data.institution || null,
+            data.grade || null,
             data.enrollment_date ? new Date(data.enrollment_date) : new Date(),
             models_1.StudentStatus.ACTIVE
         ];
@@ -95,6 +99,18 @@ class StudentRepository {
         if (data.status !== undefined) {
             fields.push(`status = $${paramCount++}`);
             values.push(data.status);
+        }
+        if (data.profile_picture !== undefined) {
+            fields.push(`profile_picture = $${paramCount++}`);
+            values.push(data.profile_picture);
+        }
+        if (data.institution !== undefined) {
+            fields.push(`institution = $${paramCount++}`);
+            values.push(data.institution);
+        }
+        if (data.grade !== undefined) {
+            fields.push(`grade = $${paramCount++}`);
+            values.push(data.grade);
         }
         fields.push(`updated_at = $${paramCount++}`);
         values.push(new Date());

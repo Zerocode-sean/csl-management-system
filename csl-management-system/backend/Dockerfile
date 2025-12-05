@@ -23,8 +23,21 @@ RUN npm run build
 # ============================================
 FROM node:18-alpine AS production
 
-# Install wget for health checks
-RUN apk add --no-cache wget
+# Install wget for health checks AND Puppeteer dependencies
+RUN apk add --no-cache \
+    wget \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    nodejs \
+    yarn
+
+# Tell Puppeteer to use installed chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Set working directory
 WORKDIR /app
@@ -40,6 +53,9 @@ COPY --from=builder /app/dist ./dist
 
 # Copy any other necessary files (migrations, seeds, etc.)
 COPY --from=builder /app/database ./database
+
+# Create directory for certificates
+RUN mkdir -p /app/certificates
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

@@ -98,7 +98,7 @@ router.get('/',
 
     const result = await studentRepo.search(filters, pagination);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Students retrieved successfully',
       data: result.data,
@@ -157,7 +157,7 @@ router.get('/:id',
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Student retrieved successfully',
       data: student
@@ -292,7 +292,7 @@ router.post('/',
       created_by: req.admin?.adminId 
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Student created successfully',
       data: student
@@ -410,7 +410,7 @@ router.put('/:id',
         updated_by: req.admin?.adminId 
       });
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Student updated successfully',
         data: student
@@ -472,7 +472,7 @@ router.delete('/:id',
         deleted_by: req.admin?.adminId 
       });
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Student deleted successfully'
       });
@@ -534,7 +534,7 @@ router.get('/:id/certificates',
 
     // This would use CertificateRepository in a full implementation
     // For now, return empty array as placeholder
-    res.json({
+    return res.json({
       success: true,
       message: 'Student certificates retrieved successfully',
       data: []

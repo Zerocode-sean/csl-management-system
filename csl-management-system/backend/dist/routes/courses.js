@@ -6,7 +6,6 @@ const errorHandler_1 = require("../middleware/errorHandler");
 const express_validator_1 = require("express-validator");
 const connection_1 = require("../database/connection");
 const logger_1 = require("../utils/logger");
-const uuid_1 = require("uuid");
 const router = (0, express_1.Router)();
 // All course routes require authentication
 router.use(auth_1.authenticateToken);
@@ -57,10 +56,10 @@ router.get('/', [
             message: err.msg
         })));
     }
-    const page = req.query.page || 1;
-    const limit = req.query.limit || 10;
-    const search = req.query.search;
-    const activeFilter = req.query.active;
+    const page = parseInt(req.query['page'], 10) || 1;
+    const limit = parseInt(req.query['limit'], 10) || 10;
+    const search = req.query['search'];
+    const activeFilter = req.query['active'] === 'true' ? true : req.query['active'] === 'false' ? false : undefined;
     const offset = (page - 1) * limit;
     let whereConditions = [];
     let queryParams = [];
@@ -73,8 +72,8 @@ router.get('/', [
     // Search filter
     if (search) {
         whereConditions.push(`(
-        c.course_name ILIKE $${paramIndex} OR 
-        c.course_code ILIKE $${paramIndex} OR 
+        c.title ILIKE $${paramIndex} OR 
+        c.code ILIKE $${paramIndex} OR 
         c.description ILIKE $${paramIndex}
       )`);
         queryParams.push(`%${search}%`);
@@ -84,11 +83,19 @@ router.get('/', [
         ? `WHERE ${whereConditions.join(' AND ')}`
         : '';
     // Get courses
+    // Note: certificates table uses csl_number as primary key, but joins on course_id
     const coursesQuery = `
       SELECT 
-        c.*,
-        COUNT(cert.certificate_id) as certificate_count,
-        COUNT(cert.certificate_id) FILTER (WHERE cert.status = 'active') as active_certificates
+        c.course_id,
+        c.code,
+        c.title,
+        c.description,
+        c.duration_months,
+        c.is_active,
+        c.created_at,
+        c.updated_at,
+        COUNT(cert.csl_number) as certificate_count,
+        COUNT(cert.csl_number) FILTER (WHERE cert.status = 'active') as active_certificates
       FROM courses c
       LEFT JOIN certificates cert ON c.course_id = cert.course_id
       ${whereClause}
@@ -132,8 +139,7 @@ router.get('/', [
  *         name: id
  *         required: true
  *         schema:
- *           type: string
- *           format: uuid
+ *           type: integer
  *     responses:
  *       200:
  *         description: Course details
@@ -141,7 +147,7 @@ router.get('/', [
  *         description: Course not found
  */
 router.get('/:id', [
-    (0, express_validator_1.param)('id').isUUID().withMessage('Valid course ID is required')
+    (0, express_validator_1.param)('id').isInt().withMessage('Valid course ID is required')
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -154,8 +160,8 @@ router.get('/:id', [
     const courseResult = await (0, connection_1.query)(`
       SELECT 
         c.*,
-        COUNT(cert.certificate_id) as certificate_count,
-        COUNT(cert.certificate_id) FILTER (WHERE cert.status = 'active') as active_certificates
+        COUNT(cert.csl_number) as certificate_count,
+        COUNT(cert.csl_number) FILTER (WHERE cert.status = 'active') as active_certificates
       FROM courses c
       LEFT JOIN certificates cert ON c.course_id = cert.course_id
       WHERE c.course_id = $1
@@ -167,16 +173,15 @@ router.get('/:id', [
     // Get recent certificates for this course
     const certificatesResult = await (0, connection_1.query)(`
       SELECT 
-        cert.certificate_id,
         cert.csl_number,
         cert.status,
-        cert.issued_at,
+        cert.issue_date,
         s.name as student_name,
         s.email as student_email
       FROM certificates cert
       JOIN students s ON cert.student_id = s.student_id
       WHERE cert.course_id = $1
-      ORDER BY cert.issued_at DESC
+      ORDER BY cert.issue_date DESC
       LIMIT 10
     `, [id]);
     const course = courseResult.rows[0];
@@ -201,17 +206,16 @@ router.get('/:id', [
  *           schema:
  *             type: object
  *             required:
- *               - course_code
- *               - course_name
+ *               - code
+ *               - title
  *               - duration_months
  *             properties:
- *               course_code:
+ *               code:
  *                 type: string
  *                 minLength: 2
- *                 maxLength: 2
- *                 pattern: '^[A-Z]{2}$'
+ *                 maxLength: 10
  *                 example: 'CS'
- *               course_name:
+ *               title:
  *                 type: string
  *                 maxLength: 255
  *                 example: 'Computer Science'
@@ -232,14 +236,13 @@ router.get('/:id', [
  *         description: Course code already exists
  */
 router.post('/', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
-    (0, express_validator_1.body)('course_code')
-        .isLength({ min: 2, max: 2 })
-        .matches(/^[A-Z]{2}$/)
-        .withMessage('Course code must be exactly 2 uppercase letters'),
-    (0, express_validator_1.body)('course_name')
+    (0, express_validator_1.body)('code')
+        .isLength({ min: 2, max: 10 })
+        .withMessage('Course code must be between 2 and 10 characters'),
+    (0, express_validator_1.body)('title')
         .notEmpty()
         .isLength({ max: 255 })
-        .withMessage('Course name is required and must be less than 255 characters'),
+        .withMessage('Course title is required and must be less than 255 characters'),
     (0, express_validator_1.body)('description').optional().isString(),
     (0, express_validator_1.body)('duration_months')
         .isInt({ min: 1, max: 60 })
@@ -252,36 +255,35 @@ router.post('/', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
             message: err.msg
         })));
     }
-    const { course_code, course_name, description, duration_months } = req.body;
+    const { code, title, description, duration_months } = req.body;
     // Check if course code already exists
-    const existingResult = await (0, connection_1.query)('SELECT course_id FROM courses WHERE course_code = $1', [course_code.toUpperCase()]);
+    const existingResult = await (0, connection_1.query)('SELECT course_id FROM courses WHERE code = $1', [code.toUpperCase()]);
     if (existingResult.rows.length > 0) {
         throw (0, errorHandler_1.createError)('Course code already exists', 409);
     }
-    const courseId = (0, uuid_1.v4)();
     const result = await (0, connection_1.query)(`
       INSERT INTO courses (
-        course_id, course_code, course_name, description, duration_months, is_active
-      ) VALUES ($1, $2, $3, $4, $5, true)
+        code, title, description, duration_months, is_active
+      ) VALUES ($1, $2, $3, $4, true)
       RETURNING *
-    `, [courseId, course_code.toUpperCase(), course_name, description, duration_months]);
+    `, [code.toUpperCase(), title, description, duration_months]);
     const course = result.rows[0];
     // Log the action
     await (0, connection_1.query)(`
       INSERT INTO audit_logs (
-        admin_id, action, table_name, record_id, 
+        admin_id, action, entity_type, entity_id, 
         new_values, ip_address, user_agent
       ) VALUES ($1, 'CREATE', 'courses', $2, $3, $4, $5)
     `, [
         req.admin.adminId,
-        courseId,
+        course.course_id.toString(),
         JSON.stringify(course),
         req.ip,
         req.get('User-Agent')
     ]);
     logger_1.logger.info('Course created successfully:', {
-        courseId,
-        courseCode: course_code,
+        courseId: course.course_id,
+        code: code,
         createdBy: req.admin.adminId
     });
     res.status(201).json({
@@ -303,8 +305,7 @@ router.post('/', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
  *         name: id
  *         required: true
  *         schema:
- *           type: string
- *           format: uuid
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -312,7 +313,7 @@ router.post('/', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
  *           schema:
  *             type: object
  *             properties:
- *               course_name:
+ *               title:
  *                 type: string
  *                 maxLength: 255
  *               description:
@@ -328,8 +329,8 @@ router.post('/', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
  *         description: Course not found
  */
 router.put('/:id', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
-    (0, express_validator_1.param)('id').isUUID().withMessage('Valid course ID is required'),
-    (0, express_validator_1.body)('course_name').optional().isLength({ max: 255 }).withMessage('Course name must be less than 255 characters'),
+    (0, express_validator_1.param)('id').isInt().withMessage('Valid course ID is required'),
+    (0, express_validator_1.body)('title').optional().isLength({ max: 255 }).withMessage('Course title must be less than 255 characters'),
     (0, express_validator_1.body)('description').optional().isString(),
     (0, express_validator_1.body)('duration_months').optional().isInt({ min: 1, max: 60 }).withMessage('Duration must be between 1 and 60 months')
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
@@ -341,7 +342,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
         })));
     }
     const { id } = req.params;
-    const { course_name, description, duration_months } = req.body;
+    const { title, description, duration_months } = req.body;
     // Get current course data
     const currentResult = await (0, connection_1.query)('SELECT * FROM courses WHERE course_id = $1', [id]);
     if (currentResult.rows.length === 0) {
@@ -352,9 +353,9 @@ router.put('/:id', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
     const updates = [];
     const values = [];
     let paramIndex = 1;
-    if (course_name !== undefined) {
-        updates.push(`course_name = $${paramIndex++}`);
-        values.push(course_name);
+    if (title !== undefined) {
+        updates.push(`title = $${paramIndex++}`);
+        values.push(title);
     }
     if (description !== undefined) {
         updates.push(`description = $${paramIndex++}`);
@@ -380,7 +381,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
     // Log the action
     await (0, connection_1.query)(`
       INSERT INTO audit_logs (
-        admin_id, action, table_name, record_id, 
+        admin_id, action, entity_type, entity_id, 
         old_values, new_values, ip_address, user_agent
       ) VALUES ($1, 'UPDATE', 'courses', $2, $3, $4, $5, $6)
     `, [
@@ -403,6 +404,73 @@ router.put('/:id', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
 }));
 /**
  * @swagger
+ * /courses/{id}:
+ *   delete:
+ *     summary: Delete a course
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Course deleted successfully
+ *       404:
+ *         description: Course not found
+ */
+router.delete('/:id', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
+    (0, express_validator_1.param)('id').isInt().withMessage('Valid course ID is required')
+], (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const errors = (0, express_validator_1.validationResult)(req);
+    if (!errors.isEmpty()) {
+        throw (0, errorHandler_1.createError)('Validation failed', 400, errors.array().map((err) => ({
+            field: err.param,
+            message: err.msg
+        })));
+    }
+    const { id } = req.params;
+    // Check if course exists
+    const courseResult = await (0, connection_1.query)('SELECT * FROM courses WHERE course_id = $1', [id]);
+    if (courseResult.rows.length === 0) {
+        throw (0, errorHandler_1.createError)('Course not found', 404);
+    }
+    const course = courseResult.rows[0];
+    // Check if course has any certificates
+    const certificatesResult = await (0, connection_1.query)('SELECT COUNT(*) as count FROM certificates WHERE course_id = $1', [id]);
+    const certificateCount = parseInt(certificatesResult.rows[0].count);
+    if (certificateCount > 0) {
+        throw (0, errorHandler_1.createError)(`Cannot delete course with ${certificateCount} associated certificate(s). Please archive the course instead.`, 400);
+    }
+    // Delete the course
+    await (0, connection_1.query)('DELETE FROM courses WHERE course_id = $1', [id]);
+    // Log the action
+    await (0, connection_1.query)(`
+      INSERT INTO audit_logs (
+        admin_id, action, entity_type, entity_id, 
+        old_values, ip_address, user_agent
+      ) VALUES ($1, 'DELETE', 'courses', $2, $3, $4, $5)
+    `, [
+        req.admin.adminId,
+        id,
+        JSON.stringify(course),
+        req.ip,
+        req.get('User-Agent')
+    ]);
+    logger_1.logger.info('Course deleted successfully:', {
+        courseId: id,
+        deletedBy: req.admin.adminId
+    });
+    res.json({
+        success: true,
+        message: 'Course deleted successfully'
+    });
+}));
+/**
+ * @swagger
  * /courses/{id}/deactivate:
  *   patch:
  *     summary: Deactivate course
@@ -414,8 +482,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
  *         name: id
  *         required: true
  *         schema:
- *           type: string
- *           format: uuid
+ *           type: integer
  *     responses:
  *       200:
  *         description: Course deactivated successfully
@@ -423,7 +490,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
  *         description: Course not found
  */
 router.patch('/:id/deactivate', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
-    (0, express_validator_1.param)('id').isUUID().withMessage('Valid course ID is required')
+    (0, express_validator_1.param)('id').isInt().withMessage('Valid course ID is required')
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -445,7 +512,7 @@ router.patch('/:id/deactivate', (0, auth_1.authorizeRoles)('super_admin', 'admin
     // Log the action
     await (0, connection_1.query)(`
       INSERT INTO audit_logs (
-        admin_id, action, table_name, record_id, 
+        admin_id, action, entity_type, entity_id, 
         old_values, new_values, ip_address, user_agent
       ) VALUES ($1, 'UPDATE', 'courses', $2, $3, $4, $5, $6)
     `, [

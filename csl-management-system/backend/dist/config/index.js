@@ -18,12 +18,6 @@ exports.config = {
         idleTimeoutMillis: parseInt(process.env['DB_IDLE_TIMEOUT'] || '30000', 10),
         connectionTimeoutMillis: parseInt(process.env['DB_CONNECTION_TIMEOUT'] || '2000', 10),
     },
-    // Redis
-    redis: {
-        host: process.env['REDIS_HOST'] || 'localhost',
-        port: parseInt(process.env['REDIS_PORT'] || '6379', 10),
-        password: process.env['REDIS_PASSWORD'],
-    },
     // JWT
     jwt: {
         secret: process.env['JWT_SECRET'] || 'your-super-secret-jwt-key-change-in-production',

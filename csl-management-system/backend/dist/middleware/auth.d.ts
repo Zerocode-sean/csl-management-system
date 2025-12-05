@@ -17,8 +17,8 @@ declare global {
 export declare const authenticateToken: (req: Request, res: Response, next: NextFunction) => Promise<void>;
 export declare const authorizeRoles: (...roles: string[]) => (req: Request, res: Response, next: NextFunction) => void;
 export declare const generateTokens: (admin: any) => {
-    accessToken: never;
-    refreshToken: never;
+    accessToken: string;
+    refreshToken: string;
 };
 export declare const verifyRefreshToken: (token: string) => {
     adminId: string;

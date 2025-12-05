@@ -92,7 +92,59 @@ router.get('/',
 
 /**
  * @swagger
- * /certificates/{id}:
+ * /certificates/stats:
+ *   get:
+ *     summary: Get certificate statistics
+ *     tags: [Certificates]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Certificate statistics
+ */
+router.get('/stats', asyncHandler(async (req, res) => {
+  const statsResult = await query(`
+    SELECT
+      COUNT(*) as total_certificates,
+      COUNT(*) FILTER (WHERE status = 'active') as active_certificates,
+      COUNT(*) FILTER (WHERE status = 'revoked') as revoked_certificates,
+      COUNT(*) FILTER (WHERE status = 'suspended') as suspended_certificates,
+      COUNT(*) FILTER (WHERE DATE(issued_at) = CURRENT_DATE) as issued_today,
+      COUNT(*) FILTER (WHERE DATE(issued_at) >= CURRENT_DATE - INTERVAL '30 days') as issued_last_30_days
+    FROM certificates
+  `);
+
+  const courseStatsResult = await query(`
+    SELECT
+      co.course_name,
+      co.course_code,
+      COUNT(c.certificate_id) as certificate_count
+    FROM courses co
+    LEFT JOIN certificates c ON co.course_id = c.course_id AND c.status = 'active'
+    GROUP BY co.course_id, co.course_name, co.course_code
+    ORDER BY certificate_count DESC
+  `);
+
+  const stats = statsResult.rows[0];
+  const courseStats = courseStatsResult.rows;
+
+  res.json({
+      success: true,
+      data: {
+        overview: {
+          total_certificates: parseInt(stats.total_certificates),
+          active_certificates: parseInt(stats.active_certificates),
+          revoked_certificates: parseInt(stats.revoked_certificates),
+          suspended_certificates: parseInt(stats.suspended_certificates),
+          issued_today: parseInt(stats.issued_today),
+          issued_last_30_days: parseInt(stats.issued_last_30_days)
+        },
+        by_course: courseStats
+      }
+    });
+  }));
+
+/**
  *   get:
  *     summary: Get certificate by ID
  *     tags: [Certificates]
@@ -188,11 +240,11 @@ router.get('/:id',
  *       409:
  *         description: Certificate already exists
  */
-router.post('/issue',
+router.post('/generate',
   authorizeRoles('super_admin', 'admin', 'course_manager'),
   [
-    body('student_id').isUUID().withMessage('Valid student ID is required'),
-    body('course_id').isUUID().withMessage('Valid course ID is required')
+    body('student_id').isInt().withMessage('Valid student ID is required'),
+    body('course_id').isInt().withMessage('Valid course ID is required')
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
@@ -204,61 +256,34 @@ router.post('/issue',
     }
 
     const { student_id, course_id } = req.body;
-    const issued_by = req.admin!.adminId;
+    const admin_id = parseInt(req.admin!.adminId, 10);
 
-    // Verify student exists and is active
-    const studentResult = await query(
-      'SELECT student_id, name, email FROM students WHERE student_id = $1 AND is_active = true',
-      [student_id]
-    );
-
-    if (studentResult.rows.length === 0) {
-      throw createError('Student not found or inactive', 404);
-    }
-
-    // Verify course exists and is active
-    const courseResult = await query(
-      'SELECT course_id, course_name, course_code FROM courses WHERE course_id = $1 AND is_active = true',
-      [course_id]
-    );
-
-    if (courseResult.rows.length === 0) {
-      throw createError('Course not found or inactive', 404);
-    }
-
-    const certificate = await CertificateService.issueCertificate({
+    logger.info('Certificate generation requested', {
       student_id,
       course_id,
-      issued_by
+      admin_id
     });
 
-    // Log the action in audit logs
-    await query(`
-      INSERT INTO audit_logs (
-        admin_id, action, table_name, record_id, 
-        new_values, ip_address, user_agent
-      ) VALUES ($1, 'CREATE', 'certificates', $2, $3, $4, $5)
-    `, [
-      issued_by,
-      certificate.certificate_id,
-      JSON.stringify({
-        csl_number: certificate.csl_number,
-        student_id: certificate.student_id,
-        course_id: certificate.course_id
-      }),
-      req.ip,
-      req.get('User-Agent')
-    ]);
+    // Use the new CertificateGeneratorService from cloud.md
+    const { CertificateGeneratorService } = await import('../services/certificateGenerator.service');
+    
+    const result = await CertificateGeneratorService.generateCertificate(
+      student_id,
+      course_id,
+      admin_id
+    );
+
+    logger.info('Certificate generated successfully', {
+      csl_number: result.cslNumber,
+      pdf_path: result.pdfPath
+    });
 
     res.status(201).json({
       success: true,
-      message: 'Certificate issued successfully',
+      message: 'Certificate generated successfully',
       data: {
-        certificate_id: certificate.certificate_id,
-        csl_number: certificate.csl_number,
-        student: studentResult.rows[0],
-        course: courseResult.rows[0],
-        issued_at: certificate.issued_at
+        csl_number: result.cslNumber,
+        pdf_url: `/api/v1/certificates/${result.cslNumber}/download`
       }
     });
   })
@@ -365,57 +390,7 @@ router.patch('/:id/revoke',
 
 /**
  * @swagger
- * /certificates/stats:
- *   get:
- *     summary: Get certificate statistics
- *     tags: [Certificates]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Certificate statistics
- */
-router.get('/stats', asyncHandler(async (req, res) => {
-  const statsResult = await query(`
-    SELECT 
-      COUNT(*) as total_certificates,
-      COUNT(*) FILTER (WHERE status = 'active') as active_certificates,
-      COUNT(*) FILTER (WHERE status = 'revoked') as revoked_certificates,
-      COUNT(*) FILTER (WHERE status = 'suspended') as suspended_certificates,
-      COUNT(*) FILTER (WHERE DATE(issued_at) = CURRENT_DATE) as issued_today,
-      COUNT(*) FILTER (WHERE DATE(issued_at) >= CURRENT_DATE - INTERVAL '30 days') as issued_last_30_days
-    FROM certificates
-  `);
-
-  const courseStatsResult = await query(`
-    SELECT 
-      co.course_name,
-      co.course_code,
-      COUNT(c.certificate_id) as certificate_count
-    FROM courses co
-    LEFT JOIN certificates c ON co.course_id = c.course_id AND c.status = 'active'
-    GROUP BY co.course_id, co.course_name, co.course_code
-    ORDER BY certificate_count DESC
-  `);
-
-  const stats = statsResult.rows[0];
-  const courseStats = courseStatsResult.rows;
-
-  res.json({
-    success: true,
-    data: {
-      overview: {
-        total_certificates: parseInt(stats.total_certificates),
-        active_certificates: parseInt(stats.active_certificates),
-        revoked_certificates: parseInt(stats.revoked_certificates),
-        suspended_certificates: parseInt(stats.suspended_certificates),
-        issued_today: parseInt(stats.issued_today),
-        issued_last_30_days: parseInt(stats.issued_last_30_days)
-      },
-      by_course: courseStats
-    }
-  });
-}));
+ * /certificates/{cslNumber}/download:
 
 /**
  * @swagger

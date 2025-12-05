@@ -116,14 +116,18 @@ const StudentsPage: React.FC = () => {
   // Load courses from backend
   useEffect(() => {
     const fetchCourses = async () => {
+      console.log('🔄 Starting to fetch courses...');
       setIsLoadingCourses(true);
       try {
+        console.log('📡 Calling coursesService.getActiveCoursesForDropdown()...');
         const response = await coursesService.getActiveCoursesForDropdown();
-        console.log('DEBUG: Courses response:', response);
+        console.log('✅ DEBUG: Courses response:', response);
+        
         if (response.success) {
           // Handle both array directly or nested in data object
           const coursesData = Array.isArray(response.data) ? response.data : (response.data as any).courses || [];
-          console.log('DEBUG: Parsed courses data:', coursesData);
+          console.log('📊 DEBUG: Parsed courses data:', coursesData);
+          console.log('📈 DEBUG: Number of courses:', coursesData.length);
           
           // Map backend course data to frontend interface if needed, or use directly
           const mappedCourses = coursesData.map((c: any) => ({
@@ -135,13 +139,24 @@ const StudentsPage: React.FC = () => {
             // Keep original fields too
             course_id: c.course_id,
           }));
+          console.log('🎯 DEBUG: Mapped courses:', mappedCourses);
           setCourses(mappedCourses as any); // Type assertion to match local Course interface
+          console.log('✅ Courses set successfully!');
+        } else {
+          console.warn('⚠️ Response success was false:', response);
+          addToast('warning', 'No Courses Available', 'The server returned no courses.');
         }
       } catch (error) {
-        console.error('Error fetching courses:', error);
+        console.error('❌ Error fetching courses:', error);
+        console.error('❌ Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          error
+        });
         addToast('error', 'Failed to Load Courses', 'Could not load courses list. Please refresh the page.');
       } finally {
         setIsLoadingCourses(false);
+        console.log('🏁 Finished fetching courses');
       }
     };
     fetchCourses();
@@ -184,7 +199,7 @@ const StudentsPage: React.FC = () => {
           studentId: student.student_custom_id ?? student.studentId ?? '',
           address: student.address ?? '',
           dateOfBirth: student.date_of_birth ?? student.dateOfBirth ?? '',
-          enrolledCourses: Array.isArray(student.courses) ? student.courses : (student.enrolledCourses ?? []),
+          enrolledCourses: Array.isArray(student.courses) ? student.courses : (Array.isArray(student.enrolledCourses) ? student.enrolledCourses : []),
           certificates: Number(student.certificate_count ?? student.certificates ?? 0),
           status: student.status ?? 'active',
           registrationDate: student.created_at ?? student.registration_date ?? student.registrationDate ?? new Date().toISOString().split('T')[0],
@@ -339,16 +354,16 @@ const StudentsPage: React.FC = () => {
     try {
       // Send correct field names to backend API
       const result = await studentsService.createStudent({
-        student_custom_id: studentId, // Fixed: was student_id
+        student_custom_id: studentId,
         name: newStudent.name.trim(),
         email: newStudent.email.toLowerCase().trim(),
-        phone: newStudent.phone.trim(), // Fixed: was mobile
+        phone: newStudent.phone.trim(),
         address: newStudent.address.trim(),
         date_of_birth: newStudent.dateOfBirth || undefined,
-        home_institution: newStudent.institution.trim() || undefined,
+        institution: newStudent.institution.trim() || undefined,
         profile_picture: newStudent.profilePicture || undefined,
-        current_grade: newStudent.grade || undefined,
-        course_id: newStudent.courseId ? parseInt(newStudent.courseId) : undefined, // Send Integer ID
+        grade: newStudent.grade || undefined,
+        course_id: newStudent.courseId ? parseInt(newStudent.courseId) : undefined,
         status: newStudent.status
       });
 
@@ -559,6 +574,17 @@ const StudentsPage: React.FC = () => {
         profilePicture: editStudent.profilePicture.trim(),
         institution: editStudent.institution.trim(),
         grade: editStudent.grade,
+        course_id: (() => {
+          // If a course is currently selected in dropdown, use it
+          if (editStudent.courseId) return parseInt(editStudent.courseId);
+          
+          // If not, check if any NEW courses were added to the list
+          const originalIds = selectedStudent.enrolledCourses.map(c => c.id);
+          const newCourses = editStudent.enrolledCourses.filter(c => !originalIds.includes(c.id));
+          if (newCourses.length > 0) return newCourses[0].id;
+          
+          return undefined;
+        })(),
         status: editStudent.status
       } as any);
 

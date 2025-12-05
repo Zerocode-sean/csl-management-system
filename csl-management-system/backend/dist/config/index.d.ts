@@ -15,11 +15,6 @@ export declare const config: {
         readonly idleTimeoutMillis: number;
         readonly connectionTimeoutMillis: number;
     };
-    readonly redis: {
-        readonly host: string;
-        readonly port: number;
-        readonly password: string | undefined;
-    };
     readonly jwt: {
         readonly secret: string;
         readonly expiresIn: string;

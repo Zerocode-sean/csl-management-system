@@ -79,18 +79,18 @@ router.get('/', [
         });
     }
     const filters = {
-        search: req.query.search,
-        status: req.query.status,
-        enrollment_year: req.query.enrollment_year
+        search: req.query['search'],
+        status: req.query['status'],
+        enrollment_year: parseInt(req.query['enrollment_year'], 10)
     };
     const pagination = {
-        page: req.query.page || 1,
-        limit: req.query.limit || 20,
-        sort_by: req.query.sort_by || 'created_at',
-        sort_order: req.query.sort_order || 'DESC'
+        page: parseInt(req.query['page'], 10) || 1,
+        limit: parseInt(req.query['limit'], 10) || 20,
+        sort_by: req.query['sort_by'] || 'created_at',
+        sort_order: req.query['sort_order'] || 'DESC'
     };
     const result = await studentRepo.search(filters, pagination);
-    res.json({
+    return res.json({
         success: true,
         message: 'Students retrieved successfully',
         data: result.data,
@@ -128,14 +128,21 @@ router.get('/:id', [
             errors: errors.array()
         });
     }
-    const student = await studentRepo.findById(req.params.id);
+    const studentId = parseInt(req.params['id'], 10);
+    if (isNaN(studentId) || studentId <= 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid student ID format'
+        });
+    }
+    const student = await studentRepo.findById(studentId);
     if (!student) {
         return res.status(404).json({
             success: false,
             message: 'Student not found'
         });
     }
-    res.json({
+    return res.json({
         success: true,
         message: 'Student retrieved successfully',
         data: student
@@ -188,22 +195,34 @@ router.get('/:id', [
  *       409:
  *         description: Student ID or email already exists
  */
-router.post('/', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
-    (0, express_validator_1.body)('student_id').notEmpty().isString().trim(),
-    (0, express_validator_1.body)('first_name').notEmpty().isString().trim().isLength({ min: 2, max: 50 }),
-    (0, express_validator_1.body)('last_name').notEmpty().isString().trim().isLength({ min: 2, max: 50 }),
-    (0, express_validator_1.body)('email').isEmail().normalizeEmail(),
-    (0, express_validator_1.body)('phone').optional().isMobilePhone('any'),
-    (0, express_validator_1.body)('date_of_birth').optional().isISO8601().toDate(),
+router.post('/', (0, auth_1.authorizeRoles)('admin', 'instructor'), [
+    (0, express_validator_1.body)('student_id').notEmpty().isString().trim().withMessage('student_id is required'),
+    (0, express_validator_1.body)('first_name').notEmpty().isString().trim().isLength({ min: 2, max: 50 }).withMessage('first_name is required and must be 2-50 chars'),
+    (0, express_validator_1.body)('last_name').notEmpty().isString().trim().isLength({ min: 2, max: 50 }).withMessage('last_name is required and must be 2-50 chars'),
+    (0, express_validator_1.body)('email').isEmail().normalizeEmail().withMessage('email must be valid'),
+    (0, express_validator_1.body)('mobile').optional().isMobilePhone('any'),
     (0, express_validator_1.body)('address').optional().isString().trim().isLength({ max: 500 }),
-    (0, express_validator_1.body)('enrollment_date').optional().isISO8601().toDate()
+    (0, express_validator_1.body)('date_of_birth').optional().isISO8601().toDate(),
+    (0, express_validator_1.body)('status').optional().isString().trim(),
+    (0, express_validator_1.body)('profile_picture').optional().isString().trim(),
+    (0, express_validator_1.body)('grade').optional().isString().trim().isLength({ max: 50 }),
+    (0, express_validator_1.body)('institution').optional().isString().trim().isLength({ max: 100 }),
+    (0, express_validator_1.body)('course_id').optional().isInt().toInt().withMessage('course_id must be an integer')
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
+        // Debug: log raw validation errors for troubleshooting
+        logger_1.logger.info('DEBUG validation errors', { errors: errors.array() });
+        logger_1.logger.error('Raw validation errors', { errors: errors.array() });
+        // Map errors to include param (field name) and message only, fallback to param/unknown
+        const errorDetails = errors.array().map(e => ({
+            field: e.param || 'unknown',
+            message: e.msg || 'Invalid value'
+        }));
         return res.status(400).json({
             success: false,
             message: 'Validation failed',
-            errors: errors.array()
+            errors: errorDetails
         });
     }
     // Check if student ID already exists
@@ -222,22 +241,30 @@ router.post('/', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
             message: 'Email already exists'
         });
     }
+    // Debug logging
+    console.log('DEBUG: Received create student request body:', JSON.stringify(req.body, null, 2));
+    // Map frontend fields to backend DTO
     const studentData = {
-        student_id: req.body.student_id,
-        first_name: req.body.first_name,
-        last_name: req.body.last_name,
+        student_id: req.body.student_custom_id || req.body.student_id,
+        first_name: req.body.name ? req.body.name.split(' ')[0] : '',
+        last_name: req.body.name ? req.body.name.split(' ').slice(1).join(' ') || req.body.name.split(' ')[0] : '',
         email: req.body.email,
-        phone: req.body.phone,
-        date_of_birth: req.body.date_of_birth,
-        address: req.body.address,
-        enrollment_date: req.body.enrollment_date
+        phone: req.body.phone || req.body.mobile || null,
+        address: req.body.address || null,
+        date_of_birth: req.body.date_of_birth || null,
+        status: req.body.status || null,
+        profile_picture: req.body.profile_picture || null,
+        grade: req.body.current_grade || req.body.grade || null,
+        institution: req.body.home_institution || req.body.institution || null,
+        course_id: req.body.course_id || null
     };
+    console.log('DEBUG: Mapped studentData for repository:', JSON.stringify(studentData, null, 2));
     const student = await studentRepo.create(studentData);
     logger_1.logger.info('Student created', {
         student_id: student.student_id,
-        created_by: req.user?.id
+        created_by: req.admin?.adminId
     });
-    res.status(201).json({
+    return res.status(201).json({
         success: true,
         message: 'Student created successfully',
         data: student
@@ -284,14 +311,19 @@ router.post('/', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
  *       404:
  *         description: Student not found
  */
-router.put('/:id', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
+router.put('/:id', (0, auth_1.authorizeRoles)('admin', 'instructor'), [
     (0, express_validator_1.param)('id').isInt({ min: 1 }).toInt(),
     (0, express_validator_1.body)('first_name').optional().isString().trim().isLength({ min: 2, max: 50 }),
     (0, express_validator_1.body)('last_name').optional().isString().trim().isLength({ min: 2, max: 50 }),
+    (0, express_validator_1.body)('name').optional().isString().trim().isLength({ min: 2, max: 100 }),
     (0, express_validator_1.body)('email').optional().isEmail().normalizeEmail(),
     (0, express_validator_1.body)('phone').optional().isMobilePhone('any'),
     (0, express_validator_1.body)('address').optional().isString().trim().isLength({ max: 500 }),
-    (0, express_validator_1.body)('status').optional().isIn(['active', 'graduated', 'suspended', 'withdrawn'])
+    (0, express_validator_1.body)('status').optional().isIn(['active', 'graduated', 'suspended', 'withdrawn']),
+    (0, express_validator_1.body)('profilePicture').optional().isString(),
+    (0, express_validator_1.body)('profile_picture').optional().isString(),
+    (0, express_validator_1.body)('institution').optional().isString().trim(),
+    (0, express_validator_1.body)('grade').optional().isString().trim()
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -301,7 +333,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
             errors: errors.array()
         });
     }
-    const studentId = req.params.id;
+    const studentId = parseInt(req.params['id'], 10);
     // Check if email already exists (excluding current student)
     if (req.body.email) {
         const existingEmail = await studentRepo.existsByEmail(req.body.email, studentId);
@@ -312,21 +344,40 @@ router.put('/:id', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
             });
         }
     }
-    const updateData = {
-        first_name: req.body.first_name,
-        last_name: req.body.last_name,
-        email: req.body.email,
-        phone: req.body.phone,
-        address: req.body.address,
-        status: req.body.status
-    };
+    const updateData = {};
+    if (req.body.first_name)
+        updateData.first_name = req.body.first_name;
+    if (req.body.last_name)
+        updateData.last_name = req.body.last_name;
+    // Handle 'name' field from frontend
+    if (req.body.name) {
+        updateData.first_name = req.body.name.split(' ')[0];
+        updateData.last_name = req.body.name.split(' ').slice(1).join(' ') || req.body.name.split(' ')[0];
+    }
+    if (req.body.email)
+        updateData.email = req.body.email;
+    if (req.body.phone)
+        updateData.phone = req.body.phone;
+    if (req.body.address)
+        updateData.address = req.body.address;
+    if (req.body.status)
+        updateData.status = req.body.status;
+    // Handle new fields
+    if (req.body.profile_picture)
+        updateData.profile_picture = req.body.profile_picture;
+    if (req.body.profilePicture)
+        updateData.profile_picture = req.body.profilePicture;
+    if (req.body.institution)
+        updateData.institution = req.body.institution;
+    if (req.body.grade)
+        updateData.grade = req.body.grade;
     try {
         const student = await studentRepo.update(studentId, updateData);
         logger_1.logger.info('Student updated', {
             student_id: studentId,
-            updated_by: req.user?.id
+            updated_by: req.admin?.adminId
         });
-        res.json({
+        return res.json({
             success: true,
             message: 'Student updated successfully',
             data: student
@@ -362,7 +413,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
  *       404:
  *         description: Student not found
  */
-router.delete('/:id', (0, auth_1.authorizeRoles)(['admin']), [
+router.delete('/:id', (0, auth_1.authorizeRoles)('admin'), [
     (0, express_validator_1.param)('id').isInt({ min: 1 }).toInt()
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
@@ -373,14 +424,14 @@ router.delete('/:id', (0, auth_1.authorizeRoles)(['admin']), [
             errors: errors.array()
         });
     }
-    const studentId = req.params.id;
+    const studentId = parseInt(req.params['id'], 10);
     try {
         await studentRepo.delete(studentId);
         logger_1.logger.info('Student deleted', {
             student_id: studentId,
-            deleted_by: req.user?.id
+            deleted_by: req.admin?.adminId
         });
-        res.json({
+        return res.json({
             success: true,
             message: 'Student deleted successfully'
         });
@@ -426,7 +477,7 @@ router.get('/:id/certificates', [
             errors: errors.array()
         });
     }
-    const studentId = req.params.id;
+    const studentId = parseInt(req.params['id'], 10);
     const student = await studentRepo.findById(studentId);
     if (!student) {
         return res.status(404).json({
@@ -436,7 +487,7 @@ router.get('/:id/certificates', [
     }
     // This would use CertificateRepository in a full implementation
     // For now, return empty array as placeholder
-    res.json({
+    return res.json({
         success: true,
         message: 'Student certificates retrieved successfully',
         data: []

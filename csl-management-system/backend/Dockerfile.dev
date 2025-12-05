@@ -1,8 +1,27 @@
 # Development Dockerfile for Backend
 FROM node:18-alpine
 
-# Install development tools
-RUN apk add --no-cache wget
+# Install development tools and Puppeteer dependencies
+RUN apk add --no-cache \
+    wget \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Ensure consistent chromium executable paths and make them executable
+RUN if [ -x "$(command -v chromium-browser)" ]; then \
+      ln -sf $(command -v chromium-browser) /usr/bin/chromium || true; \
+    elif [ -x "$(command -v chromium)" ]; then \
+      ln -sf $(command -v chromium) /usr/bin/chromium-browser || true; \
+    fi && \
+    chmod +x /usr/bin/chromium || true || true
+
+# Tell Puppeteer to use installed chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+  PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Set working directory
 WORKDIR /app

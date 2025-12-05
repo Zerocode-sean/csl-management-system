@@ -4,8 +4,10 @@ exports.CertificateServiceV2 = void 0;
 const StudentRepository_1 = require("../repositories/StudentRepository");
 const CourseRepository_1 = require("../repositories/CourseRepository");
 const CertificateRepository_1 = require("../repositories/CertificateRepository");
+const models_1 = require("../types/models");
 const certificateUtils_1 = require("../utils/certificateUtils");
 const logger_1 = require("../utils/logger");
+const PDFService_1 = require("./PDFService");
 /**
  * Enhanced Certificate Service
  * Handles certificate business logic and orchestrates repository operations
@@ -40,8 +42,45 @@ class CertificateServiceV2 {
         if (existingCert) {
             throw new Error('Certificate already exists for this student and course');
         }
-        // Issue the certificate
+        // Issue the certificate (this creates the database record and generates CSL number)
         const certificate = await this.certificateRepo.issue(data, issuedBy);
+        // Generate PDF for the certificate
+        try {
+            logger_1.logger.info('Generating PDF for certificate', { csl_number: certificate.csl_number });
+            // Get admin who issued the certificate for the PDF
+            // For now, we'll use a placeholder - in production, fetch from admin repository
+            const issuedByName = 'Director'; // TODO: Fetch actual admin name
+            const pdfResult = await PDFService_1.PDFService.generateCertificatePDF({
+                student_name: `${student.first_name} ${student.last_name}`,
+                course_name: course.course_name,
+                course_code: course.course_code,
+                serial_number: certificate.csl_number,
+                issue_date: certificate.issue_date.toISOString(),
+                duration: Math.round(course.duration_hours / 30) || 0, // Convert hours to months approximation
+                issued_by: issuedByName
+            });
+            if (!pdfResult.success) {
+                logger_1.logger.error('PDF generation failed, but certificate was created', {
+                    csl_number: certificate.csl_number,
+                    error: pdfResult.error
+                });
+                // Note: We don't throw here - certificate is still valid even without PDF
+                // The PDF can be regenerated later if needed
+            }
+            else {
+                logger_1.logger.info('PDF generated successfully', {
+                    csl_number: certificate.csl_number,
+                    path: pdfResult.filePath
+                });
+            }
+        }
+        catch (pdfError) {
+            logger_1.logger.error('Unexpected error during PDF generation', {
+                csl_number: certificate.csl_number,
+                error: pdfError
+            });
+            // Continue - certificate is still valid
+        }
         logger_1.logger.info('Certificate issued successfully', {
             csl_number: certificate.csl_number,
             student: `${student.first_name} ${student.last_name}`,
@@ -113,10 +152,10 @@ class CertificateServiceV2 {
         if (!certificate) {
             throw new Error('Certificate not found');
         }
-        if (certificate.status === 'revoked') {
+        if (certificate.status === models_1.CertificateStatus.REVOKED) {
             throw new Error('Certificate is already revoked');
         }
-        const updatedCert = await this.certificateRepo.updateStatus(id, 'revoked', revokedBy);
+        const updatedCert = await this.certificateRepo.updateStatus(id, models_1.CertificateStatus.REVOKED, revokedBy);
         logger_1.logger.info('Certificate revoked', {
             csl_number: certificate.csl_number,
             revoked_by: revokedBy

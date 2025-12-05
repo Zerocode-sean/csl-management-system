@@ -50,6 +50,9 @@ router.get('/:cslNumber', rateLimiter_1.verificationRateLimiter, [
         })));
     }
     const { cslNumber } = req.params;
+    if (typeof cslNumber !== 'string' || !cslNumber) {
+        throw (0, errorHandler_1.createError)('Missing or invalid CSL number', 400);
+    }
     const clientIP = req.ip;
     const userAgent = req.get('User-Agent');
     // Log verification attempt

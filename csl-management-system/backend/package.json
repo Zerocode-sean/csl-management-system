@@ -24,7 +24,6 @@
   "author": "CSL Team",
   "license": "MIT",
   "dependencies": {
-    "@types/qrcode": "^1.5.6",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -52,6 +51,7 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.10.5",
     "@types/pg": "^8.10.9",
+    "@types/qrcode": "^1.5.6",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
     "@types/uuid": "^9.0.7",

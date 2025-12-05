@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const connection_1 = require("../database/connection");
 const auth_1 = require("../middleware/auth");
 const errorHandler_1 = require("../middleware/errorHandler");
@@ -74,14 +75,14 @@ router.post('/login', rateLimiter_1.authRateLimiter, [
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         throw (0, errorHandler_1.createError)('Validation failed', 400, errors.array().map(err => ({
-            field: err.param,
+            field: err.param || err.path,
             message: err.msg
         })));
     }
     const { email, password } = req.body;
     // Get admin with password
     const result = await (0, connection_1.query)(`
-      SELECT admin_id, username, email, name, role, password_hash, is_active,
+      SELECT admin_id, username, email, CONCAT(first_name, ' ', last_name) as name, role, password_hash, is_active,
              failed_login_attempts, account_locked_until, last_login_at
       FROM admins 
       WHERE email = $1
@@ -123,7 +124,10 @@ router.post('/login', rateLimiter_1.authRateLimiter, [
             });
             throw (0, errorHandler_1.createError)('Too many failed attempts. Account locked temporarily.', 423);
         }
-        throw (0, errorHandler_1.createError)('Invalid email or password', 401);
+        throw (0, errorHandler_1.createError)('Invalid email or password', 401, undefined, {
+            failedAttempts,
+            maxAttempts: config_1.config.security.maxLoginAttempts
+        });
     }
     // Reset failed login attempts and update last login
     await (0, connection_1.query)(`
@@ -185,7 +189,7 @@ router.post('/refresh', [
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         throw (0, errorHandler_1.createError)('Validation failed', 400, errors.array().map(err => ({
-            field: err.param,
+            field: err.param || err.path,
             message: err.msg
         })));
     }
@@ -208,6 +212,57 @@ router.post('/refresh', [
             refreshToken: newRefreshToken
         }
     });
+}));
+/**
+ * @swagger
+ * /auth/verify:
+ *   get:
+ *     summary: Verify access token
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Admin'
+ *       401:
+ *         description: Invalid or expired token
+ */
+router.get('/verify', (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+        if (!token) {
+            throw (0, errorHandler_1.createError)('Access token required', 401);
+        }
+        // Verify token
+        const decoded = jsonwebtoken_1.default.verify(token, config_1.config.jwt.secret);
+        // Get admin details
+        const result = await (0, connection_1.query)('SELECT admin_id, username, email, CONCAT(first_name, \' \', last_name) as name, role, is_active, last_login_at FROM admins WHERE admin_id = $1 AND is_active = true', [decoded.adminId]);
+        if (result.rows.length === 0) {
+            throw (0, errorHandler_1.createError)('Invalid or expired token', 401);
+        }
+        const admin = result.rows[0];
+        res.json({
+            success: true,
+            data: admin
+        });
+    }
+    catch (error) {
+        if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
+            throw (0, errorHandler_1.createError)('Invalid token', 401);
+        }
+        throw error;
+    }
 }));
 /**
  * @swagger

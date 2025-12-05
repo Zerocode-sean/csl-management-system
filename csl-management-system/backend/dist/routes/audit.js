@@ -74,32 +74,32 @@ router.get('/logs', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
             message: err.msg
         })));
     }
-    const page = req.query.page || 1;
-    const limit = req.query.limit || 20;
+    const page = parseInt(req.query['page'], 10) || 1;
+    const limit = parseInt(req.query['limit'], 10) || 20;
     const offset = (page - 1) * limit;
     let whereConditions = [];
     let queryParams = [];
     let paramIndex = 1;
     // Build WHERE conditions
-    if (req.query.action) {
+    if (req.query['action']) {
         whereConditions.push(`a.action = $${paramIndex++}`);
-        queryParams.push(req.query.action);
+        queryParams.push(req.query['action']);
     }
-    if (req.query.table_name) {
+    if (req.query['table_name']) {
         whereConditions.push(`a.table_name = $${paramIndex++}`);
-        queryParams.push(req.query.table_name);
+        queryParams.push(req.query['table_name']);
     }
-    if (req.query.admin_id) {
+    if (req.query['admin_id']) {
         whereConditions.push(`a.admin_id = $${paramIndex++}`);
-        queryParams.push(req.query.admin_id);
+        queryParams.push(req.query['admin_id']);
     }
-    if (req.query.start_date) {
+    if (req.query['start_date']) {
         whereConditions.push(`DATE(a.created_at) >= $${paramIndex++}`);
-        queryParams.push(req.query.start_date);
+        queryParams.push(req.query['start_date']);
     }
-    if (req.query.end_date) {
+    if (req.query['end_date']) {
         whereConditions.push(`DATE(a.created_at) <= $${paramIndex++}`);
-        queryParams.push(req.query.end_date);
+        queryParams.push(req.query['end_date']);
     }
     const whereClause = whereConditions.length > 0
         ? `WHERE ${whereConditions.join(' AND ')}`
@@ -169,7 +169,7 @@ router.get('/stats', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
             message: err.msg
         })));
     }
-    const days = req.query.days || 30;
+    const days = parseInt(req.query['days'], 10) || 30;
     // Get overall statistics
     const overallStatsResult = await (0, connection_1.query)(`
       SELECT 
