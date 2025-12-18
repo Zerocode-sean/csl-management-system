@@ -1,0 +1,30 @@
+```mermaid
+flowchart TD
+    A[Start: Admin Access Dashboard] --> B{Has Valid Session?}
+    B -->|Yes| C[Display Dashboard]
+    B -->|No| D[Show Login Page]
+    D --> E[Enter Credentials]
+    E --> F{Credentials Valid?}
+    F -->|No| G[Show Error Message]
+    G --> H{Retry Attempts < 3?}
+    H -->|Yes| D
+    H -->|No| I[Lock Account for 15 mins]
+    I --> J[Send Alert to Super Admin]
+    J --> K[End]
+    F -->|Yes| L{MFA Enabled?}
+    L -->|Yes| M[Send OTP]
+    M --> N[Enter OTP]
+    N --> O{OTP Valid?}
+    O -->|No| G
+    O -->|Yes| P[Generate JWT Token]
+    L -->|No| P
+    P --> Q[Log Authentication Event]
+    Q --> C
+    C --> R{Select Action}
+    R -->|Manage Courses| S[Course Management Module]
+    R -->|Manage Students| T[Student Management Module]
+    R -->|Issue Certificate| U[Certificate Issuance Module]
+    R -->|View Reports| V[Reports Module]
+    R -->|Logout| W[Destroy Session]
+    W --> K
+```

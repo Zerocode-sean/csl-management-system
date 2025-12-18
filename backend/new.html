@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate of Excellence - EMESA Research and Consultancy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            padding: 20px;
+        }
+        
+        .certificate {
+            width: 297mm;
+            height: 210mm;
+            background: white;
+            border: 15px solid #1a1a2e;
+            position: relative;
+            padding: 50px 70px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* CSL Badge - Bottom Center */
+        .csl-badge {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff8c42;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            z-index: 5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 35px;
+            width: 100%;
+        }
+        
+        .logo {
+            width: 55px;
+            height: 55px;
+        }
+        
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .logo-text {
+            text-align: center;
+        }
+        
+        .logo-text h1 {
+            font-size: 34px;
+            color: #1a1a2e;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 3px;
+        }
+        
+        .logo-text p {
+            font-size: 11px;
+            color: #666;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        
+        .title {
+            margin-bottom: 25px;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .title h2 {
+            font-size: 56px;
+            color: #1a1a2e;
+            font-weight: 800;
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .title h3 {
+            font-size: 26px;
+            color: #1a1a2e;
+            font-weight: 400;
+            letter-spacing: 2px;
+        }
+        
+        .presented-to {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .recipient-name {
+            font-size: 68px;
+            color: #ff8c42;
+            font-family: 'Brush Script MT', cursive;
+            margin-bottom: 25px;
+            font-weight: normal;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .certificate-body {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.9;
+            margin-bottom: 40px;
+            max-width: 750px;
+            text-align: center;
+        }
+        
+        .certificate-body .program-name {
+            font-weight: 700;
+            color: #1a1a2e;
+            text-transform: uppercase;
+        }
+        
+        .certificate-body .date {
+            font-weight: 600;
+            color: #ff8c42;
+        }
+        
+        .certificate-body .technologies {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        
+        .signature-section {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 80px;
+            margin-bottom: 20px;
+        }
+        
+        .signature-line {
+            width: 240px;
+            text-align: center;
+        }
+        
+        .signature-space {
+            height: 60px;
+            margin-bottom: 10px;
+            /* Empty space for handwritten signature */
+        }
+        
+        .signature-line {
+            width: 240px;
+            text-align: center;
+            border-top: 2px solid #333;
+            padding-top: 8px;
+        }
+        
+        .signature-name {
+            font-size: 14px;
+            color: #1a1a2e;
+            font-weight: 700;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+        }
+        
+        .signature-title {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .medal {
+            position: absolute;
+            top: -25px;
+            right: 90px;
+            width: 170px;
+            height: 210px;
+        }
+        
+        .ribbon {
+            width: 75px;
+            height: 95px;
+            background: linear-gradient(to bottom, #c41e3a 0%, #8b1a2e 100%);
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 70%, 0 85%);
+            z-index: 1;
+        }
+        
+        .medal-circle {
+            width: 135px;
+            height: 135px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ff9900 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3), inset 0 -3px 10px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+        
+        .medal-outer {
+            width: 125px;
+            height: 125px;
+            background: #f4c430;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .medal-inner {
+            width: 108px;
+            height: 108px;
+            background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #ff8c42;
+        }
+        
+        .laurel {
+            position: absolute;
+            bottom: 12px;
+            font-size: 28px;
+            color: #c8a040;
+        }
+        
+        .decorative-circles {
+            position: absolute;
+            bottom: 100px;
+            right: 15px;
+        }
+        
+        .circle {
+            width: 95px;
+            height: 95px;
+            border: 11px solid #ff8c42;
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .circle:nth-child(1) {
+            bottom: 0;
+            right: 0;
+        }
+        
+        .circle:nth-child(2) {
+            bottom: -35px;
+            right: 95px;
+            width: 75px;
+            height: 75px;
+            border-width: 9px;
+        }
+        
+        .circle:nth-child(3) {
+            bottom: -70px;
+            right: 185px;
+            width: 58px;
+            height: 58px;
+            border-width: 8px;
+        }
+        
+        .circuit-line {
+            position: absolute;
+            bottom: 95px;
+            right: 25px;
+            width: 380px;
+            height: 2px;
+            background: #ff8c42;
+        }
+        
+        .circuit-dot {
+            width: 18px;
+            height: 18px;
+            background: #ff8c42;
+            border-radius: 50%;
+            position: absolute;
+            top: -8px;
+        }
+        
+        .scalloped-edge {
+            position: absolute;
+            width: 125px;
+            height: 125px;
+            border-radius: 50%;
+        }
+        
+        .scallop {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #f4c430;
+            border-radius: 50%;
+        }
+        
+        /* QR Code Section - Bottom left, properly aligned */
+        .qr-section {
+            position: absolute;
+            bottom: 95px;
+            left: 70px;
+            text-align: center;
+        }
+        
+        .qr-code {
+            width: 75px;
+            height: 75px;
+            border: 3px solid #1a1a2e;
+            padding: 5px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+        
+        .qr-text {
+            font-size: 8px;
+            color: #999;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .certificate {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate">
+        <!-- CSL Number Badge - BOTTOM CENTER -->
+        <div class="csl-badge">CSL: {{CSL_NUMBER}}</div>
+        
+        <!-- Logo Section - CENTERED -->
+        <div class="logo-section">
+            <div class="logo">
+                <img src="{{LOGO_URL}}" alt="EMESA Logo" onerror="this.style.display='none'" />
+            </div>
+            <div class="logo-text">
+                <h1>EMESA RESEARCH CONSULTANCY </h1>
+                <p>Discover · Grow · Transform</p>
+            </div>
+        </div>
+        
+        <!-- Title - CENTERED -->
+        <div class="title">
+            <h2>CERTIFICATE</h2>
+            <h3>OF EXCELLENCE</h3>
+        </div>
+        
+        <!-- Presented To - CENTERED -->
+        <p class="presented-to">PROUDLY PRESENTED TO:</p>
+        
+        <!-- Recipient Name - CENTERED -->
+        <div class="recipient-name">{{STUDENT_NAME}}</div>
+        
+        <!-- Certificate Body - CENTERED -->
+        <div class="certificate-body">
+            For successfully completing the <span class="program-name">{{COURSE_NAME}}</span>,<br>
+            on <span class="date">{{COMPLETION_DATE}}</span>, at EMESA Research and Consultancy.<br><br>
+            The program includes the professional use of <span class="technologies">{{COURSE_CODE}}</span>.
+        </div>
+        
+        <!-- Signature - CENTERED -->
+        <div class="signature-section">
+            <div class="signature-line">
+                <!-- Empty space for handwritten signature -->
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ISSUED_BY}}</div>
+                <div class="signature-title">CEO, EMESA Research</div>
+            </div>
+        </div>
+        
+        <!-- Medal (Top Right) -->
+        <div class="medal">
+            <div class="ribbon"></div>
+            <div class="medal-circle">
+                <div class="medal-outer">
+                    <!-- Scalloped edges -->
+                    <div class="scalloped-edge">
+                        <div class="scallop" style="top: 0; left: 50%; transform: translateX(-50%);"></div>
+                        <div class="scallop" style="top: 10%; right: 10%;"></div>
+                        <div class="scallop" style="top: 30%; right: 0;"></div>
+                        <div class="scallop" style="top: 50%; right: -5px;"></div>
+                        <div class="scallop" style="bottom: 30%; right: 0;"></div>
+                        <div class="scallop" style="bottom: 10%; right: 10%;"></div>
+                        <div class="scallop" style="bottom: 0; left: 50%; transform: translateX(-50%);"></div>
+                        <div class="scallop" style="bottom: 10%; left: 10%;"></div>
+                        <div class="scallop" style="bottom: 30%; left: 0;"></div>
+                        <div class="scallop" style="top: 50%; left: -5px;"></div>
+                        <div class="scallop" style="top: 30%; left: 0;"></div>
+                        <div class="scallop" style="top: 10%; left: 10%;"></div>
+                    </div>
+                    <div class="medal-inner">
+                        🌿
+                        <div class="laurel">🌿</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Decorative Circles (Bottom Right - matching Moringa) -->
+        <div class="decorative-circles">
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+        </div>
+        
+        <!-- Circuit Line (Bottom Right - matching Moringa) -->
+        <div class="circuit-line">
+            <div class="circuit-dot" style="left: 0;"></div>
+            <div class="circuit-dot" style="left: 100px;"></div>
+            <div class="circuit-dot" style="left: 200px;"></div>
+            <div class="circuit-dot" style="right: 0;"></div>
+        </div>
+        
+        <!-- QR Code Section (Bottom Left - YOUR ADDITION) -->
+        <div class="qr-section">
+            <img src="{{QR_CODE}}" alt="QR Code" class="qr-code" onerror="this.style.display='none'" />
+            <div class="qr-text">Scan to Verify</div>
+        </div>
+    </div>
+</body>
+</html>

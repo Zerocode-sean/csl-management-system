@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSL Certificate of Achievement</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .certificate-container {
+            width: 297mm; /* A4 landscape width */
+            height: 210mm; /* A4 landscape height */
+            background: linear-gradient(135deg, #000000 0%, #1a0a0a 25%, #000000 50%, #1a0a0a 75%, #000000 100%);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            page-break-inside: avoid;
+        }
+        
+        /* Decorative corner elements */
+        .corner-decoration {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 3px solid #dc2626;
+        }
+        
+        .corner-top-left {
+            top: 25px;
+            left: 25px;
+            border-right: 0;
+            border-bottom: 0;
+        }
+        
+        .corner-top-right {
+            top: 25px;
+            right: 25px;
+            border-left: 0;
+            border-bottom: 0;
+        }
+        
+        .corner-bottom-left {
+            bottom: 25px;
+            left: 25px;
+            border-right: 0;
+            border-top: 0;
+        }
+        
+        .corner-bottom-right {
+            bottom: 25px;
+            right: 25px;
+            border-left: 0;
+            border-top: 0;
+        }
+        
+        /* Main border */
+        .certificate-border {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            border: 1px solid #dc2626;
+            background: rgba(220, 38, 38, 0.03);
+        }
+        
+        /* Main Content */
+        .certificate-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            color: white;
+            padding: 40px;
+            max-width: 85%;
+        }
+        
+        /* Header */
+        .certificate-header {
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border-radius: 60px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 25px;
+            box-shadow: 0 20px 50px rgba(220, 38, 38, 0.4);
+            border: 4px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .institution-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px;
+            font-weight: 900;
+            color: #dc2626;
+            margin-bottom: 8px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        
+        .institution-tagline {
+            font-size: 18px;
+            color: #d1d5db;
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        
+        /* Certificate Title */
+        .certificate-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 72px;
+            font-weight: 900;
+            color: #ffffff;
+            margin: 40px 0 20px 0;
+            text-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, #ffffff, #dc2626, #ffffff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .certificate-subtitle {
+            font-size: 24px;
+            color: #dc2626;
+            margin-bottom: 40px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        
+        /* Award Text */
+        .award-text {
+            font-size: 20px;
+            color: #e5e7eb;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+        
+        .student-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 56px;
+            font-weight: 700;
+            color: #dc2626;
+            margin: 35px 0;
+            text-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
+            position: relative;
+            display: inline-block;
+            padding: 15px 30px;
+            border: 2px solid #dc2626;
+            border-radius: 10px;
+            background: rgba(220, 38, 38, 0.1);
+        }
+        
+        .course-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+            font-weight: 600;
+            color: #ffffff;
+            margin: 25px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .completion-text {
+            font-size: 18px;
+            color: #d1d5db;
+            margin: 30px 0;
+            line-height: 1.8;
+            font-style: italic;
+        }
+        
+        .issue-date-section {
+            margin: 40px 0;
+        }
+        
+        .issue-text {
+            font-size: 16px;
+            color: #9ca3af;
+            margin-bottom: 10px;
+        }
+        
+        .issue-date {
+            font-size: 22px;
+            color: #dc2626;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Footer Section */
+        .certificate-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 50px;
+            width: 100%;
+        }
+        
+        .signature-section {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .signature-line {
+            width: 250px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #dc2626, transparent);
+            margin: 0 auto 15px;
+        }
+        
+        .signature-title {
+            font-size: 16px;
+            color: #d1d5db;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .signature-name {
+            font-size: 20px;
+            color: white;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+        
+        /* Certificate Details */
+        .certificate-details {
+            text-align: right;
+            flex: 1;
+        }
+        
+        .detail-item {
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #d1d5db;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .detail-value {
+            color: #dc2626;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        
+        /* Verification Section */
+        .qr-section {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            text-align: center;
+        }
+        
+        .qr-code {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #ffffff, #f3f4f6);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border: 2px solid #dc2626;
+        }
+        
+        .qr-text {
+            font-size: 12px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Decorative elements */
+        .decorative-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .decorative-lines::before,
+        .decorative-lines::after {
+            content: '';
+            position: absolute;
+            background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.3), transparent);
+            height: 2px;
+            width: 100%;
+        }
+        
+        .decorative-lines::before {
+            top: 30%;
+        }
+        
+        .decorative-lines::after {
+            bottom: 30%;
+        }
+        
+        /* Print Styles */
+        @media print {
+            .certificate-container {
+                width: 297mm;
+                height: 210mm;
+                margin: 0;
+                page-break-inside: avoid;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <!-- Corner Decorations -->
+        <div class="corner-decoration corner-top-left"></div>
+        <div class="corner-decoration corner-top-right"></div>
+        <div class="corner-decoration corner-bottom-left"></div>
+        <div class="corner-decoration corner-bottom-right"></div>
+        
+        <!-- Certificate Border -->
+        <div class="certificate-border"></div>
+        
+        <!-- Decorative Lines -->
+        <div class="decorative-lines"></div>
+        
+        <!-- Main Certificate Content -->
+        <div class="certificate-content">
+            <!-- Header Section -->
+            <div class="certificate-header">
+                <div class="logo">CSL</div>
+                <div class="institution-name">Cyber Security Lanka</div>
+                <div class="institution-tagline">Excellence in Digital Education</div>
+            </div>
+            
+            <!-- Certificate Title -->
+            <div class="certificate-title">Certificate</div>
+            <div class="certificate-subtitle">of Achievement</div>
+            
+            <!-- Award Content -->
+            <div class="award-content">
+                <p class="award-text">This is to certify that</p>
+                
+                <div class="student-name">{{student_name}}</div>
+                
+                <p class="award-text">has successfully completed the</p>
+                
+                <div class="course-name">{{course_name}}</div>
+                
+                <div class="completion-text">
+                    with distinction and has demonstrated excellence in all required competencies
+                </div>
+                
+                <div class="issue-date-section">
+                    <p class="issue-text">Awarded this</p>
+                    <div class="issue-date">{{issue_date}}</div>
+                </div>
+            </div>
+            
+            <!-- Footer Section -->
+            <div class="certificate-footer">
+                <div class="signature-section">
+                    <div class="signature-line"></div>
+                    <div class="signature-title">Director</div>
+                    <div class="signature-name">{{issued_by}}</div>
+                </div>
+                
+                <div class="certificate-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Certificate ID:</span>
+                        <span class="detail-value">{{serial_number}}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Course:</span>
+                        <span class="detail-value">{{course_code}}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Duration:</span>
+                        <span class="detail-value">{{duration}} months</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Verification Section -->
+        <div class="qr-section">
+            <div class="qr-code">
+                <div style="font-size: 14px; font-weight: bold;">VERIFY</div>
+                <div style="font-size: 10px;">ONLINE</div>
+            </div>
+            <div class="qr-text">scan to verify</div>
+        </div>
+    </div>
+</body>
+</html>

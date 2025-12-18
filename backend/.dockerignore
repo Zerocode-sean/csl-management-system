@@ -1,0 +1,40 @@
+# Ignore node_modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Ignore environment files
+.env*
+!.env.example
+
+# Ignore test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+__tests__
+coverage
+
+# Ignore build artifacts in source
+dist
+build
+
+# Ignore dev tools
+.vscode
+.idea
+*.swp
+
+# Ignore logs
+logs
+*.log
+
+# Ignore documentation
+*.md
+
+# Ignore git
+.git
+.gitignore
+
+# Ignore Docker files
+Dockerfile.dev
+docker-compose*.yml

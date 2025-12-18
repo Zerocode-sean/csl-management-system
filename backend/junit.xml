@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="7" failures="0" errors="0" time="8.965">
+  <testsuite name="CertificateService - Unit Tests" errors="0" failures="0" skipped="0" timestamp="2025-12-05T13:05:44" time="6.164" tests="7">
+    <testcase classname="CertificateService - Unit Tests validateCSLFormat should validate correct CSL format" name="CertificateService - Unit Tests validateCSLFormat should validate correct CSL format" time="0.006">
+    </testcase>
+    <testcase classname="CertificateService - Unit Tests validateCSLFormat should reject invalid CSL format" name="CertificateService - Unit Tests validateCSLFormat should reject invalid CSL format" time="0.002">
+    </testcase>
+    <testcase classname="CertificateService - Unit Tests validateCSLFormat should handle null and undefined" name="CertificateService - Unit Tests validateCSLFormat should handle null and undefined" time="0.001">
+    </testcase>
+    <testcase classname="CertificateService - Unit Tests parseCSL should parse valid CSL number correctly" name="CertificateService - Unit Tests parseCSL should parse valid CSL number correctly" time="0.002">
+    </testcase>
+    <testcase classname="CertificateService - Unit Tests parseCSL should return null for invalid CSL" name="CertificateService - Unit Tests parseCSL should return null for invalid CSL" time="0">
+    </testcase>
+    <testcase classname="CertificateService - Unit Tests parseCSL should handle edge cases" name="CertificateService - Unit Tests parseCSL should handle edge cases" time="0">
+    </testcase>
+    <testcase classname="CertificateService - Unit Tests Certificate Number Generation (Conceptual) should follow expected format pattern" name="CertificateService - Unit Tests Certificate Number Generation (Conceptual) should follow expected format pattern" time="0.001">
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,38 @@
+```mermaid
+flowchart TD
+    A[Start: User Accesses Verification Portal] --> B[Display Input Form]
+    B --> C[User Enters CSL Number]
+    C --> D{Format Valid YYYY-CC-NNNN-VVVVVV?}
+    D -->|No| E[Display Error: Invalid Format]
+    E --> F[Return to Form]
+    F --> C
+    D -->|Yes| G{Rate Limit Check}
+    G -->|Exceeded| H[Display Error: Too Many Requests]
+    H --> I[End]
+    G -->|OK| J[Submit to API: GET /verify/CSL]
+    J --> K[Query Database for CSL Number]
+    K --> L{CSL Exists?}
+    L -->|No| M[Log Failed Attempt]
+    M --> N[Display: Certificate Not Found]
+    N --> I
+    L -->|Yes| O{Status = Active?}
+    O -->|No Revoked/Suspended| P[Display: Certificate Invalid/Revoked]
+    P --> Q[Show Revocation Date if applicable]
+    Q --> I
+    O -->|Yes| R[Verify Hash Integrity]
+    R --> S[Recompute Hash using student_id + CSL + PEPPER]
+    S --> T{Hash Matches?}
+    T -->|No| U[Log Potential Forgery Attempt]
+    U --> V[Display: Certificate Invalid Authentication Failed]
+    V --> I
+    T -->|Yes| W[Log Successful Verification]
+    W --> X[Display Certificate Details]
+    X --> Y[Show: Student Name, Course Title, Issue Date]
+    Y --> Z{User Requests Full Details?}
+    Z -->|No| I
+    Z -->|Yes| AA{Admin Authenticated?}
+    AA -->|No| AB[Display: Login Required for Full Details]
+    AB --> I
+    AA -->|Yes| AC[Show Complete Certificate Data]
+    AC --> I
+```

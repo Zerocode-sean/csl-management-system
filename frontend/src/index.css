@@ -1,0 +1,271 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom CSS for glassmorphism effects */
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-dark-900 dark:via-dark-800 dark:to-dark-900;
+    @apply text-slate-900 dark:text-slate-100;
+    @apply min-h-screen;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Scrollbar styles */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-500;
+  }
+}
+
+@layer components {
+  /* Glass Card Component */
+  .glass-card {
+    @apply bg-white/20 dark:bg-black/20;
+    @apply backdrop-blur-md;
+    @apply border border-white/30 dark:border-white/10;
+    @apply shadow-glass;
+    @apply rounded-xl;
+  }
+
+  .glass-card-strong {
+    @apply bg-white/40 dark:bg-black/40;
+    @apply backdrop-blur-lg;
+    @apply border border-white/50 dark:border-white/20;
+    @apply shadow-glass-lg;
+    @apply rounded-2xl;
+  }
+
+  /* Gradient Button */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-primary-500 to-secondary-500;
+    @apply hover:from-primary-600 hover:to-secondary-600;
+    @apply text-white font-medium;
+    @apply px-6 py-3 rounded-lg;
+    @apply transition-all duration-200;
+    @apply shadow-lg hover:shadow-xl;
+    @apply transform hover:scale-105 active:scale-95;
+  }
+
+  .btn-glass {
+    @apply glass-card;
+    @apply px-6 py-3 rounded-lg;
+    @apply text-slate-700 dark:text-slate-200;
+    @apply font-medium;
+    @apply transition-all duration-200;
+    @apply hover:bg-white/30 dark:hover:bg-white/10;
+    @apply transform hover:scale-105 active:scale-95;
+  }
+
+  /* Input styles */
+  .input-glass {
+    @apply glass-card;
+    @apply w-full px-4 py-3;
+    @apply text-slate-900 dark:text-slate-100;
+    @apply placeholder-slate-500 dark:placeholder-slate-400;
+    @apply border-0 ring-0 outline-none;
+    @apply focus:bg-white/30 dark:focus:bg-black/30;
+    @apply transition-all duration-200;
+  }
+
+  /* Navigation styles */
+  .nav-glass {
+    @apply glass-card-strong;
+    @apply sticky top-0 z-50;
+    @apply border-b border-white/20 dark:border-white/10;
+  }
+
+  /* Sidebar styles */
+  .sidebar-glass {
+    @apply glass-card-strong;
+    @apply h-full;
+    @apply border-r border-white/20 dark:border-white/10;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    @apply transition-all duration-300;
+    @apply hover:shadow-glass-lg hover:scale-105;
+    @apply cursor-pointer;
+  }
+
+  /* Neon glow effects */
+  .glow-primary {
+    @apply shadow-neon;
+  }
+
+  .glow-secondary {
+    @apply shadow-neon-pink;
+  }
+
+  .glow-accent {
+    @apply shadow-neon-green;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-500 to-secondary-500;
+    @apply bg-clip-text text-transparent;
+  }
+
+  .text-gradient-accent {
+    @apply bg-gradient-to-r from-accent-500 to-primary-500;
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* Loading shimmer effect */
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .shimmer::after {
+    @apply absolute inset-0;
+    @apply bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    @apply animate-shimmer;
+    content: '';
+  }
+
+  /* Status badges */
+  .badge-success {
+    @apply bg-accent-500/20 text-accent-700 dark:text-accent-300;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+    @apply border border-accent-500/30;
+  }
+
+  .badge-warning {
+    @apply bg-amber-500/20 text-amber-700 dark:text-amber-300;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+    @apply border border-amber-500/30;
+  }
+
+  .badge-error {
+    @apply bg-red-500/20 text-red-700 dark:text-red-300;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+    @apply border border-red-500/30;
+  }
+
+  .badge-info {
+    @apply bg-primary-500/20 text-primary-700 dark:text-primary-300;
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+    @apply border border-primary-500/30;
+  }
+}
+
+@layer utilities {
+  /* Custom animations */
+  .animate-float-slow {
+    animation: float
+  }
+
+  .animate-float-fast {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Glass morphism utilities */
+  .backdrop-blur-glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Gradient borders */
+  .border-gradient {
+    border: 1px solid;
+    border-image: linear-gradient(45deg, rgba(14, 165, 233, 0.5), rgba(217, 70, 239, 0.5)) 1;
+  }
+}
+
+/* Custom focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-transparent;
+}
+
+/* Dark mode transitions */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.2s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out;
+}

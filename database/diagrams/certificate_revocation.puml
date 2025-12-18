@@ -1,0 +1,26 @@
+```mermaid
+flowchart TD
+    A[Start: Admin Selects Revoke Certificate] --> B[Search for Certificate by CSL or Student]
+    B --> C{Certificate Found?}
+    C -->|No| D[Display Error: Not Found]
+    D --> E[End]
+    C -->|Yes| F[Display Certificate Details]
+    F --> G{Current Status?}
+    G -->|Already Revoked| H[Display: Already Revoked]
+    H --> E
+    G -->|Active| I[Display Revocation Form]
+    I --> J[Enter Revocation Reason]
+    J --> K{Confirm Revocation?}
+    K -->|No| L[Cancel Operation]
+    L --> E
+    K -->|Yes| M[Update Status to 'revoked']
+    M --> N[Set revoked_at = NOW]
+    N --> O[Set revoked_by_admin_id]
+    O --> P[Save Revocation Reason]
+    P --> Q[Log Audit Event]
+    Q --> R{Send Notification?}
+    R -->|Yes| S[Email Student about Revocation]
+    R -->|No| T[Display Success]
+    S --> T
+    T --> E
+```

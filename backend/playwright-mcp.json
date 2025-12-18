@@ -1,0 +1,68 @@
+{
+  "$schema": "https://aka.ms/playwright-mcp-config-schema",
+  "server": {
+    "name": "playwright-mcp",
+    "command": "npx",
+    "args": [
+      "@playwright/mcp",
+      "--config",
+      "playwright-mcp.json"
+    ],
+    "env": {
+      "PLAYWRIGHT_MCP_LOG_LEVEL": "info"
+    }
+  },
+
+  "browser": {
+    "type": "chromium",
+    "headless": true,
+    "launchOptions": {
+      "channel": "chrome",
+      "args": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage"
+      ]
+    },
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "defaultTimeout": 30_000,
+    "slowMo": 0
+  },
+
+  "storageState": "./auth/storage-state.json",
+
+  "trace": {
+    "enabled": false,
+    "path": "./traces"
+  },
+
+  "screenshot": {
+    "path": "./screenshots",
+    "fullPage": false
+  },
+
+  "tools": {
+    "enabled": [
+      "navigate",
+      "click",
+      "type",
+      "fill",
+      "selectOption",
+      "hover",
+      "press",
+      "evaluate",
+      "getSnapshot",
+      "screenshot",
+      "generateTest"
+    ]
+  },
+
+  "accessibility": {
+    "snapshot": true,
+    "roleFilter": []
+  }
+}

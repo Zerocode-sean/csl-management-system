@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSL Students Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Simple students service
+        const studentsService = {
+            async getAllStudents() {
+                try {
+                    const response = await fetch('http://localhost:5001/api/v1/students');
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error('Error fetching students:', error);
+                    throw error;
+                }
+            }
+        };
+
+        // Simple Students Component
+        function StudentsTest() {
+            const [students, setStudents] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                loadStudents();
+            }, []);
+
+            const loadStudents = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+                    const response = await studentsService.getAllStudents();
+                    if (response.success) {
+                        setStudents(response.data);
+                    } else {
+                        setError(response.message || 'Failed to load students');
+                    }
+                } catch (err) {
+                    setError('Failed to connect to API: ' + err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen p-8">
+                    <div className="max-w-6xl mx-auto">
+                        <h1 className="text-4xl font-bold text-white mb-8 text-center">
+                            🎓 CSL Students Module Test
+                        </h1>
+                        
+                        {error && (
+                            <div className="bg-red-500/10 backdrop-blur-md border border-red-500/20 rounded-xl p-4 mb-6">
+                                <div className="text-red-300">❌ Error: {error}</div>
+                            </div>
+                        )}
+
+                        <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
+                            {loading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                    <span className="ml-3 text-white">Loading students...</span>
+                                </div>
+                            ) : (
+                                <div className="p-6">
+                                    <h2 className="text-2xl font-semibold text-white mb-4">
+                                        📊 Students Data ({students.length} records)
+                                    </h2>
+                                    
+                                    <div className="grid gap-4">
+                                        {students.map((student) => (
+                                            <div 
+                                                key={student.student_id} 
+                                                className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all duration-200"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold text-white">
+                                                            {student.name}
+                                                        </h3>
+                                                        <p className="text-indigo-300">
+                                                            ID: CSL-{student.student_id}
+                                                        </p>
+                                                        <p className="text-gray-300">
+                                                            📧 {student.email}
+                                                        </p>
+                                                        {student.mobile && (
+                                                            <p className="text-gray-300">
+                                                                📱 {student.mobile}
+                                                            </p>
+                                                        )}
+                                                        {student.address && (
+                                                            <p className="text-gray-400 text-sm">
+                                                                📍 {student.address}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm">
+                                                            Active
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 mt-2">
+                                                            Registered: {new Date(student.created_at).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    {students.length === 0 && (
+                                        <div className="text-center py-12">
+                                            <p className="text-gray-300">No students found</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="mt-8 text-center">
+                            <button 
+                                onClick={loadStudents}
+                                className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white px-6 py-3 rounded-lg transition-all duration-200 transform hover:scale-105"
+                            >
+                                🔄 Refresh Data
+                            </button>
+                        </div>
+                        
+                        <div className="mt-8 bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
+                            <h3 className="text-xl font-semibold text-white mb-4">🔧 Test Results</h3>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-300">API Connection:</span>
+                                    <span className={error ? "text-red-400" : "text-green-400"}>
+                                        {error ? "❌ Failed" : "✅ Connected"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-300">Data Loading:</span>
+                                    <span className={loading ? "text-yellow-400" : "text-green-400"}>
+                                        {loading ? "⏳ Loading" : "✅ Complete"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-300">Records Found:</span>
+                                    <span className="text-indigo-300">{students.length}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-300">Backend URL:</span>
+                                    <span className="text-gray-400">http://localhost:5001</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render the component
+        ReactDOM.render(<StudentsTest />, document.getElementById('root'));
+    </script>
+</body>
+</html>

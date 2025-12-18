@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="14" failures="13" errors="0" time="4.47">
+  <testsuite name="Certificate Integration Tests" errors="0" failures="13" skipped="0" timestamp="2025-12-05T12:58:12" time="4.273" tests="14">
+    <testcase classname="Certificate Integration Tests › Certificate Generation" name="should generate a certificate with valid CSL number" time="0.276">
+      <failure>Error: expect(received).toBeDefined()
+
+Received: undefined
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:62:32)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Generation" name="should generate unique CSL numbers for different certificates" time="0.181">
+      <failure>Error: Failed to generate certificate number
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.getNextSequentialNumber (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:84:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Function.generateCSL (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:44:26)
+    at Function.issueCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:229:29)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:94:21)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Generation" name="should handle concurrent certificate generation" time="0.311">
+      <failure>Error: Failed to generate certificate number
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.getNextSequentialNumber (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:84:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Function.generateCSL (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:44:26)
+    at Function.issueCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:229:29)
+    at async Promise.all (index 0)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:121:23)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Generation" name="should increment sequential numbers correctly" time="0.13">
+      <failure>Error: Failed to generate certificate number
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.getNextSequentialNumber (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:84:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Function.generateCSL (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:44:26)
+    at Function.issueCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:229:29)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:144:21)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Verification" name="should verify valid certificate" time="0.092">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:177:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Verification" name="should reject invalid CSL number" time="0.071">
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Verification" name="should reject non-existent certificate" time="0.273">
+      <failure>Error: Verification service error
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.verifyCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:209:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:190:22)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Verification" name="should detect revoked certificates" time="0.275">
+      <failure>Error: Certificate not found or already revoked
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.revokeCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:283:26)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:198:7)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Revocation" name="should revoke certificate successfully" time="0.065">
+      <failure>Error: Certificate not found or already revoked
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.revokeCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:283:26)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:223:22)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Revocation" name="should update status in database" time="0.1">
+      <failure>Error: Certificate not found or already revoked
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.revokeCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:283:26)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:237:7)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Listing and Filtering" name="should retrieve certificates with pagination" time="0.107">
+      <failure>Error: Failed to generate certificate number
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.getNextSequentialNumber (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:84:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Function.generateCSL (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:44:26)
+    at Function.issueCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:229:29)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:263:9)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Listing and Filtering" name="should filter by student ID" time="0.217">
+      <failure>Error: Failed to generate certificate number
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.getNextSequentialNumber (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:84:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Function.generateCSL (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:44:26)
+    at Function.issueCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:229:29)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:263:9)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Listing and Filtering" name="should filter by course ID" time="0.152">
+      <failure>Error: Failed to generate certificate number
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.getNextSequentialNumber (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:84:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Function.generateCSL (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:44:26)
+    at Function.issueCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:229:29)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:263:9)</failure>
+    </testcase>
+    <testcase classname="Certificate Integration Tests › Certificate Listing and Filtering" name="should filter by status" time="0.225">
+      <failure>Error: Failed to generate certificate number
+    at createError (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\middleware\errorHandler.ts:62:17)
+    at Function.getNextSequentialNumber (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:84:24)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Function.generateCSL (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:44:26)
+    at Function.issueCertificate (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\src\services\certificateService.ts:229:29)
+    at Object.&lt;anonymous&gt; (C:\Users\Administrator\OneDrive\Desktop\CSL\csl-management-system\backend\tests\integration\certificate.integration.test.ts:263:9)</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

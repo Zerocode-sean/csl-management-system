@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; }
+        #log { background: #f8f9fa; padding: 10px; margin: 10px 0; height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>Backend CORS Test</h1>
+    <p>This page tests CORS functionality with the backend server.</p>
+    
+    <div>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <button onclick="testStudents()">Test Students Endpoint</button>
+        <button onclick="testCORS()">Test CORS Preflight</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div id="log"></div>
+    
+    <script>
+        const API_BASE = 'http://localhost:5001';
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            entry.style.margin = '5px 0';
+            entry.style.padding = '5px';
+            
+            if (type === 'error') {
+                entry.style.backgroundColor = '#f8d7da';
+                entry.style.color = '#721c24';
+            } else if (type === 'success') {
+                entry.style.backgroundColor = '#d4edda';
+                entry.style.color = '#155724';
+            }
+            
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        async function testHealth() {
+            log('🔍 Testing health endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    log(`✅ Health check successful: ${data}`, 'success');
+                    log(`📋 Response headers: ${JSON.stringify([...response.headers.entries()])}`, 'info');
+                } else {
+                    log(`❌ Health check failed: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Health check error: ${error.message}`, 'error');
+                log(`🔍 Error details: ${error.stack}`, 'error');
+            }
+        }
+        
+        async function testStudents() {
+            log('👥 Testing students endpoint...');
+            try {
+                const response = await fetch(`${API_BASE}/api/students`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.text();
+                    log(`✅ Students fetch successful: ${data}`, 'success');
+                } else {
+                    log(`❌ Students fetch failed: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Students fetch error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testCORS() {
+            log('🔗 Testing CORS preflight...');
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                log(`🔍 CORS preflight response: ${response.status}`, response.ok ? 'success' : 'error');
+                log(`📋 CORS headers: ${JSON.stringify([...response.headers.entries()])}`, 'info');
+                
+                if (response.headers.get('Access-Control-Allow-Origin')) {
+                    log(`✅ CORS Allow-Origin: ${response.headers.get('Access-Control-Allow-Origin')}`, 'success');
+                } else {
+                    log(`❌ No Access-Control-Allow-Origin header found`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ CORS test error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run tests on page load
+        window.onload = () => {
+            log('🚀 Page loaded, starting automatic tests...');
+            setTimeout(() => {
+                log('📡 Attempting to connect to backend...');
+                testHealth();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

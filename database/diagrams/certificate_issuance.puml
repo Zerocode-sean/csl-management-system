@@ -1,0 +1,48 @@
+@startuml certificate_issuance
+start
+:Start: Admin Selects Issue Certificate;
+:Load Active Courses List;
+:Load Active Students List;
+:Admin Selects Student;
+:Admin Selects Course;
+if (Validate Selection?) then (Valid)
+  if (Check Duplicate Certificate?) then (Exists)
+    :Display Warning: Certificate Already Issued;
+    if (Override?) then (Yes)
+      :Mark Old as Revoked;
+      :Proceed to Generation;
+    else (No)
+      ->[Return to Selection] Admin Selects Student;
+    endif
+  else (Not Exists)
+    :Proceed to Generation;
+  endif
+  :Get Current Year YYYY;
+  :Get Course Code CC;
+  :Query Max Sequential Number for Year+Course;
+  :Increment Sequential NNNN;
+  :Concatenate: YYYY-CC-NNNN;
+  :Generate Verification Hash VVVVVV;
+  :Hash = SHA256 student_id + YYYY-CC-NNNN + PEPPER;
+  :Truncate to 6 chars;
+  :Final CSL = YYYY-CC-NNNN-VVVVVV;
+  :Save to Database;
+  if (Save Successful?) then (Yes)
+    :Log Audit Event;
+    :Display Success with CSL Number;
+    :Generate Printable Certificate PDF;
+    if (Send Email Notification?) then (Yes)
+      :Send to Student Email;
+    else (No)
+    endif
+    :End;
+  else (No)
+    :Display Error: DB Issue;
+    :End;
+  endif
+else (Invalid)
+  :Display Error: Missing/Inactive Data;
+  ->[Return to Selection] Admin Selects Student;
+endif
+stop
+@enduml

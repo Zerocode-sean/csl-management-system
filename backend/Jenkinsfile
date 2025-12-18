@@ -1,0 +1,87 @@
+pipeline {
+  agent any
+  
+  environment {
+    // Node.js version - can be configured via Jenkins Global Tools
+    NODEJS_HOME = tool name: 'NodeJS-18', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+    PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
+  }
+  
+  stages {
+    stage('Checkout') {
+      steps {
+        echo 'Checking out code...'
+        checkout scm
+      }
+    }
+    
+    stage('Install Dependencies') {
+      steps {
+        dir('backend') {
+          echo 'Installing npm dependencies...'
+          sh 'npm ci'
+        }
+      }
+    }
+    
+    stage('Run Unit Tests') {
+      steps {
+        dir('backend') {
+          echo 'Running unit tests...'
+          sh 'npm run test:unit:coverage'
+        }
+      }
+    }
+    
+    stage('Publish Test Results') {
+      steps {
+        dir('backend') {
+          // Publish JUnit test results
+          junit 'test-results/junit.xml'
+          
+          // Publish coverage report
+          publishHTML([
+            allowMissing: false,
+            alwaysLinkToLastBuild: true,
+            keepAll: true,
+            reportDir: 'coverage/lcov-report',
+            reportFiles: 'index.html',
+            reportName: 'Coverage Report',
+            reportTitles: 'Test Coverage'
+          ])
+        }
+      }
+    }
+    
+    stage('Build Backend') {
+      steps {
+        dir('backend') {
+          echo 'Building backend...'
+          sh 'npm run build'
+        }
+      }
+    }
+    
+    stage('Archive Artifacts') {
+      steps {
+        dir('backend') {
+          archiveArtifacts artifacts: 'dist/**/*', fingerprint: true
+          archiveArtifacts artifacts: 'coverage/**/*', fingerprint: true
+        }
+      }
+    }
+  }
+  
+  post {
+    always {
+      echo 'Pipeline completed'
+      cleanWs()
+    }
+    success {
+      echo '✅ Build successful!'
+    }
+    failure {
+      echo '❌ Build failed!'
+    }
+  }
+}
