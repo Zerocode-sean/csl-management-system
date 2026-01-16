@@ -341,7 +341,7 @@ const DashboardPage: React.FC = () => {
       default:
         // Search all - go to students by default
         navigate(`/students?search=${encodeURIComponent(searchQuery)}`);
-        toast('Searching in students...', { icon: 'ℹ️' });
+        toast.info('Searching in students...');
     }
   };
 

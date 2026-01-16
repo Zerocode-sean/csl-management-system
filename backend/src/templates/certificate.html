@@ -47,7 +47,7 @@
             left: 50%;
             transform: translateX(-50%);
             background: #FF8C42;
-            color: white;
+            color: #1a1a2e;
             padding: 10px 25px;
             border-radius: 5px;
             font-size: 12px;
@@ -57,18 +57,20 @@
             box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         }
         
+        /* Logo Section - TOP LEFT */
         .logo-section {
+            position: absolute;
+            top: 30px;
+            left: 60px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 25px;
-            margin-bottom: 35px;
-            width: 100%;
+            gap: 30px;
+            z-index: 3;
         }
         
         .logo {
-            width: 100px;
-            height: 100px;
+            width: 200px;
+            height: 200px;
             flex-shrink: 0;
         }
         
@@ -79,27 +81,28 @@
         }
         
         .logo-text {
-            text-align: center;
+            text-align: left;
         }
         
         .logo-text h1 {
-            font-size: 24px;
+            font-size: 28px;
             color: #1a1a2e;
             font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
             line-height: 1.2;
         }
         
         .logo-text p {
-            font-size: 10px;
+            font-size: 15px;
             color: #666;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
         }
         
         .title {
             margin-bottom: 25px;
+            margin-top: 120px;
             text-align: center;
             width: 100%;
         }
@@ -269,7 +272,7 @@
             align-items: center;
             justify-content: center;
             font-size: 28px;
-            color: #FF8C42;
+            color: #1a1a2e;
         }
         
         .laurel {
@@ -354,13 +357,10 @@
 </head>
 <body>
     <div class="certificate">
-        <!-- CSL Number Badge - BOTTOM CENTER -->
-        <div class="csl-badge">CSL: {{CSL_NUMBER}}</div>
-        
         <!-- Logo Section - TOP LEFT -->
         <div class="logo-section">
             <div class="logo">
-                <img src="{{LOGO_URL}}" alt="EMESA Logo" onerror="this.style.display='none'" />
+                <img src="{{LOGO_URL}}" alt="EMESA Logo" />
             </div>
             <div class="logo-text">
                 <h1>EMESA RESEARCH CONSULTANCY</h1>
@@ -371,7 +371,7 @@
         <!-- Title - CENTERED -->
         <div class="title">
             <h2>CERTIFICATE</h2>
-            <h3>OF COMPLETION</h3>
+            <h3>OF INDUSTRIAL ATTACHMENT</h3>
         </div>
         
         <!-- Presented To - CENTERED -->
@@ -382,9 +382,11 @@
         
         <!-- Certificate Body - CENTERED -->
         <div class="certificate-body">
-            In recognition for completion of attachment at EMESA Research and Consultancy  <span class="program-name">{{COURSE_NAME}}</span>,<br>
-            on <span class="date">{{COMPLETION_DATE}}</span>, for a period of 3 months .<br><br>
-            The program includes the professional practice and use of <span class="technologies">{{COURSE_CODE}}</span>.
+            For successfully completing <strong>INDUSTRIAL ATTACHMENT</strong> at EMESA Research and Consultancy<br>
+            in the <span class="program-name">{{COURSE_NAME}}</span> program,<br>
+            from <span class="date">{{START_DATE}}</span> to <span class="date">{{COMPLETION_DATE}}</span>, for a duration of <strong>{{DURATION}}</strong>.<br><br>
+            This attachment included professional practice and hands-on experience with<br>
+            <span class="technologies">{{COURSE_CODE}}</span> technologies and methodologies.
             <span class="issue-date">Certificate Issued: {{ISSUE_DATE}}</span>
         </div>
         
@@ -411,8 +413,7 @@
             <div class="medal-circle">
                 <div class="medal-outer">
                     <div class="medal-inner">
-                        🌿
-                        <div class="laurel">🌿</div>
+                        <img src="{{LOGO_URL}}" alt="CSL Logo" style="width: 70px; height: 70px; border-radius: 50%; object-fit: contain;" />
                     </div>
                 </div>
             </div>
@@ -427,8 +428,13 @@
         
         <!-- QR Code Section (Bottom Left) -->
         <div class="qr-section">
-            <img src="{{QR_CODE}}" alt="QR Code" class="qr-code" onerror="this.style.display='none'" />
+            <img src="{{QR_CODE}}" alt="QR Code" class="qr-code" />
             <div class="qr-text">Scan to Verify</div>
+        </div>
+        
+        <!-- CSL Badge - Bottom Center -->
+        <div class="csl-badge">
+            CSL Number: {{CSL_NUMBER}}
         </div>
     </div>
 </body>

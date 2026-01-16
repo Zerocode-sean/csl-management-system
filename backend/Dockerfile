@@ -54,6 +54,11 @@ COPY --from=builder /app/dist ./dist
 # Copy any other necessary files (migrations, seeds, etc.)
 COPY --from=builder /app/database ./database
 
+# Copy templates directory (needed for certificate generation)
+COPY --from=builder /app/src/templates ./src/templates
+
+# Note: Logo directory is mounted via volume in docker-compose.yml
+
 # Create directory for certificates
 RUN mkdir -p /app/certificates
 
