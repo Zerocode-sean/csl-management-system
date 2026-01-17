@@ -55,10 +55,12 @@ const authenticateToken = async (req, res, next) => {
         const admin = result.rows[0];
         req.admin = {
             adminId: admin.admin_id,
+            id: admin.admin_id, // Alias for adminId
             username: admin.username,
             email: admin.email,
             role: admin.role
         };
+        req.user = req.admin; // Alias for backward compatibility
         next();
     }
     catch (error) {

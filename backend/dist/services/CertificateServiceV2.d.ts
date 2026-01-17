@@ -1,4 +1,4 @@
-import { IssueCertificateDTO, CertificateVerificationResult, CertificateSearchFilter, PaginationOptions } from '../types/models';
+import { IssueCertificateDTO, CertificateVerificationResult, CertificateSearchFilter, PaginationOptions, CertificateStatus } from '../types/models';
 /**
  * Enhanced Certificate Service
  * Handles certificate business logic and orchestrates repository operations
@@ -39,7 +39,7 @@ export declare class CertificateServiceV2 {
         completion_date: Date;
         grade?: string;
         gpa?: number;
-        status: import("../types/models").CertificateStatus;
+        status: CertificateStatus;
         issued_by: number;
         verification_hash: string;
         metadata?: any;

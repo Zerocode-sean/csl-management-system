@@ -5,7 +5,8 @@ import {
   IssueCertificateDTO, 
   CertificateVerificationResult,
   CertificateSearchFilter,
-  PaginationOptions 
+  PaginationOptions,
+  CertificateStatus
 } from '../types/models';
 import { validateCertificateData } from '../utils/certificateUtils';
 import { logger } from '../utils/logger';
@@ -145,11 +146,11 @@ export class CertificateServiceV2 {
       throw new Error('Certificate not found');
     }
 
-    if (certificate.status === 'revoked') {
+    if (certificate.status === CertificateStatus.REVOKED) {
       throw new Error('Certificate is already revoked');
     }
 
-    const updatedCert = await this.certificateRepo.updateStatus(id, 'revoked', revokedBy);
+    const updatedCert = await this.certificateRepo.updateStatus(id, CertificateStatus.REVOKED, revokedBy);
 
     logger.info('Certificate revoked', {
       csl_number: certificate.csl_number,

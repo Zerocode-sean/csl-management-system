@@ -260,7 +260,7 @@ export class StudentRepository {
 
     if (excludeId) {
       sql += ' AND id != $2';
-      values.push(excludeId);
+      values.push(String(excludeId));
     }
 
     try {
@@ -281,7 +281,7 @@ export class StudentRepository {
 
     if (excludeId) {
       sql += ' AND id != $2';
-      values.push(excludeId);
+      values.push(String(excludeId));
     }
 
     try {

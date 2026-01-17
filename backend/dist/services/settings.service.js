@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SettingsService = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const connection_1 = require("../database/connection");
 const logger_1 = require("../utils/logger");
 class SettingsService {
@@ -66,13 +66,13 @@ class SettingsService {
             throw new Error('Admin not found');
         }
         // Verify current password
-        const isValidPassword = await bcrypt_1.default.compare(data.currentPassword, adminResult.rows[0].password_hash);
+        const isValidPassword = await bcryptjs_1.default.compare(data.currentPassword, adminResult.rows[0].password_hash);
         if (!isValidPassword) {
             throw new Error('Current password is incorrect');
         }
         // Hash new password
-        const salt = await bcrypt_1.default.genSalt(12);
-        const newPasswordHash = await bcrypt_1.default.hash(data.newPassword, salt);
+        const salt = await bcryptjs_1.default.genSalt(12);
+        const newPasswordHash = await bcryptjs_1.default.hash(data.newPassword, salt);
         // Update password
         await pool.query(`UPDATE admins 
        SET password_hash = $1, 

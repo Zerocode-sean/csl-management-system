@@ -11,7 +11,7 @@ const router = (0, express_1.Router)();
  * @desc    Get current admin profile
  * @access  Private
  */
-router.get('/profile', auth_1.authenticate, (0, errorHandler_1.asyncHandler)(async (req, res) => {
+router.get('/profile', auth_1.authenticateToken, (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const adminId = req.admin?.adminId;
     if (!adminId) {
         throw (0, errorHandler_1.createError)('Admin ID not found', 401);
@@ -27,7 +27,7 @@ router.get('/profile', auth_1.authenticate, (0, errorHandler_1.asyncHandler)(asy
  * @desc    Update admin profile
  * @access  Private
  */
-router.put('/profile', auth_1.authenticate, [
+router.put('/profile', auth_1.authenticateToken, [
     (0, express_validator_1.body)('firstName').trim().notEmpty().withMessage('First name is required'),
     (0, express_validator_1.body)('lastName').trim().notEmpty().withMessage('Last name is required'),
     (0, express_validator_1.body)('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
@@ -65,7 +65,7 @@ router.put('/profile', auth_1.authenticate, [
  * @desc    Change admin password
  * @access  Private
  */
-router.put('/password', auth_1.authenticate, [
+router.put('/password', auth_1.authenticateToken, [
     (0, express_validator_1.body)('currentPassword').notEmpty().withMessage('Current password is required'),
     (0, express_validator_1.body)('newPassword')
         .isLength({ min: 8 })
@@ -109,7 +109,7 @@ router.put('/password', auth_1.authenticate, [
  * @desc    Get admin preferences
  * @access  Private
  */
-router.get('/preferences', auth_1.authenticate, (0, errorHandler_1.asyncHandler)(async (req, res) => {
+router.get('/preferences', auth_1.authenticateToken, (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const adminId = req.admin?.adminId;
     if (!adminId) {
         throw (0, errorHandler_1.createError)('Admin ID not found', 401);
@@ -125,7 +125,7 @@ router.get('/preferences', auth_1.authenticate, (0, errorHandler_1.asyncHandler)
  * @desc    Update admin preferences
  * @access  Private
  */
-router.put('/preferences', auth_1.authenticate, [
+router.put('/preferences', auth_1.authenticateToken, [
     (0, express_validator_1.body)('emailNotifications').optional().isBoolean(),
     (0, express_validator_1.body)('studentEnrollmentNotifications').optional().isBoolean(),
     (0, express_validator_1.body)('certificateNotifications').optional().isBoolean(),
@@ -158,7 +158,7 @@ router.put('/preferences', auth_1.authenticate, [
  * @desc    Get system configuration
  * @access  Private (Admin only)
  */
-router.get('/system', auth_1.authenticate, auth_1.requireAdmin, (0, errorHandler_1.asyncHandler)(async (req, res) => {
+router.get('/system', auth_1.authenticateToken, (0, auth_1.authorizeRoles)('admin'), (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const config = await settings_service_1.SettingsService.getSystemConfig();
     res.json({
         success: true,
@@ -170,7 +170,7 @@ router.get('/system', auth_1.authenticate, auth_1.requireAdmin, (0, errorHandler
  * @desc    Update system configuration
  * @access  Private (Admin only)
  */
-router.put('/system/:configKey', auth_1.authenticate, auth_1.requireAdmin, [
+router.put('/system/:configKey', auth_1.authenticateToken, (0, auth_1.authorizeRoles)('admin'), [
     (0, express_validator_1.body)('configValue').trim().notEmpty().withMessage('Configuration value is required')
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
@@ -185,6 +185,9 @@ router.put('/system/:configKey', auth_1.authenticate, auth_1.requireAdmin, [
     const { configValue } = req.body;
     if (!adminId) {
         throw (0, errorHandler_1.createError)('Admin ID not found', 401);
+    }
+    if (!configKey) {
+        throw (0, errorHandler_1.createError)('Configuration key is required', 400);
     }
     const updatedConfig = await settings_service_1.SettingsService.updateSystemConfig(parseInt(adminId, 10), configKey, configValue);
     res.json({

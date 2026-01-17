@@ -24,37 +24,36 @@ router.get('/dashboard', (0, errorHandler_1.asyncHandler)(async (req, res) => {
     // Get overview statistics
     const overviewResult = await (0, connection_1.query)(`
     SELECT 
-      (SELECT COUNT(*) FROM students WHERE is_active = true) as active_students,
-      (SELECT COUNT(*) FROM courses WHERE is_active = true) as active_courses,
+      (SELECT COUNT(*) FROM students WHERE status = 'active' AND deleted_at IS NULL) as active_students,
+      (SELECT COUNT(*) FROM courses WHERE is_active = true AND deleted_at IS NULL) as active_courses,
       (SELECT COUNT(*) FROM certificates WHERE status = 'active') as active_certificates,
-      (SELECT COUNT(*) FROM certificates WHERE DATE(issued_at) = CURRENT_DATE) as certificates_issued_today,
+      (SELECT COUNT(*) FROM certificates WHERE DATE(issue_date) = CURRENT_DATE) as certificates_issued_today,
       (SELECT COUNT(*) FROM verification_logs WHERE DATE(verified_at) = CURRENT_DATE) as verifications_today
   `);
     // Get recent certificates
     const recentCertificatesResult = await (0, connection_1.query)(`
     SELECT 
-      c.certificate_id,
       c.csl_number,
-      c.issued_at,
+      c.issue_date,
       s.name as student_name,
-      course.course_name,
-      course.course_code,
-      admin.name as issuer_name
+      co.title,
+      co.code,
+      COALESCE(a.first_name || ' ' || a.last_name, a.username) as issuer_name
     FROM certificates c
     JOIN students s ON c.student_id = s.student_id
-    JOIN courses course ON c.course_id = course.course_id
-    JOIN admins admin ON c.issued_by = admin.admin_id
-    ORDER BY c.issued_at DESC
+    JOIN courses co ON c.course_id = co.course_id
+    LEFT JOIN admins a ON c.issued_by_admin_id = a.admin_id
+    ORDER BY c.issue_date DESC
     LIMIT 10
   `);
     // Get certificate issuance trend (last 30 days)
     const trendResult = await (0, connection_1.query)(`
     SELECT 
-      DATE(issued_at) as date,
+      DATE(issue_date) as date,
       COUNT(*) as count
     FROM certificates 
-    WHERE issued_at >= CURRENT_DATE - INTERVAL '30 days'
-    GROUP BY DATE(issued_at)
+    WHERE issue_date >= CURRENT_DATE - INTERVAL '30 days'
+    GROUP BY DATE(issue_date)
     ORDER BY date ASC
   `);
     // Get verification statistics (last 7 days)
@@ -71,13 +70,13 @@ router.get('/dashboard', (0, errorHandler_1.asyncHandler)(async (req, res) => {
     // Get top courses by certificate count
     const topCoursesResult = await (0, connection_1.query)(`
     SELECT 
-      co.course_name,
-      co.course_code,
-      COUNT(c.certificate_id) as certificate_count
+      co.title as course_name,
+      co.code as course_code,
+      COUNT(c.csl_number) as certificate_count
     FROM courses co
     LEFT JOIN certificates c ON co.course_id = c.course_id AND c.status = 'active'
-    WHERE co.is_active = true
-    GROUP BY co.course_id, co.course_name, co.course_code
+    WHERE co.is_active = true AND co.deleted_at IS NULL
+    GROUP BY co.course_id, co.title, co.code
     ORDER BY certificate_count DESC
     LIMIT 5
   `);
@@ -240,7 +239,7 @@ router.get('/reports', (0, auth_1.authorizeRoles)('super_admin', 'admin'), [
             };
             break;
         case 'courses':
-            const courseResult = await (0, connection_1.query)(`SELECT c.*, COUNT(cert.certificate_id) as certificate_count 
+            const courseResult = await (0, connection_1.query)(`SELECT c.*, COUNT(cert.csl_number) as certificate_count 
            FROM courses c 
            LEFT JOIN certificates cert ON c.course_id = cert.course_id 
            WHERE 1=1 ${dateFilter.replace('created_at', 'c.created_at')} 

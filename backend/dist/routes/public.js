@@ -116,7 +116,7 @@ router.get('/verify/:cslNumber', verifyLimiter, [
             logger_1.logger.warn('Failed to log verification:', err);
             // Don't fail the request if logging fails
         });
-        res.json({
+        return res.json({
             success: true,
             valid: cert.status === 'active',
             data: {

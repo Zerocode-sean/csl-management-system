@@ -4,6 +4,7 @@ exports.CertificateServiceV2 = void 0;
 const StudentRepository_1 = require("../repositories/StudentRepository");
 const CourseRepository_1 = require("../repositories/CourseRepository");
 const CertificateRepository_1 = require("../repositories/CertificateRepository");
+const models_1 = require("../types/models");
 const certificateUtils_1 = require("../utils/certificateUtils");
 const logger_1 = require("../utils/logger");
 /**
@@ -113,10 +114,10 @@ class CertificateServiceV2 {
         if (!certificate) {
             throw new Error('Certificate not found');
         }
-        if (certificate.status === 'revoked') {
+        if (certificate.status === models_1.CertificateStatus.REVOKED) {
             throw new Error('Certificate is already revoked');
         }
-        const updatedCert = await this.certificateRepo.updateStatus(id, 'revoked', revokedBy);
+        const updatedCert = await this.certificateRepo.updateStatus(id, models_1.CertificateStatus.REVOKED, revokedBy);
         logger_1.logger.info('Certificate revoked', {
             csl_number: certificate.csl_number,
             revoked_by: revokedBy

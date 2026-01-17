@@ -7,6 +7,7 @@ import { query } from '../database/connection';
 
 interface JwtPayload {
   adminId: string;
+  id?: string; // Alias for adminId
   username: string;
   email: string;
   role: string;
@@ -18,6 +19,7 @@ declare global {
   namespace Express {
     interface Request {
       admin?: JwtPayload;
+      user?: JwtPayload; // Alias for admin for backward compatibility
     }
   }
 }
@@ -50,10 +52,12 @@ export const authenticateToken = async (
     const admin = result.rows[0];
     req.admin = {
       adminId: admin.admin_id,
+      id: admin.admin_id, // Alias for adminId
       username: admin.username,
       email: admin.email,
       role: admin.role
     };
+    req.user = req.admin; // Alias for backward compatibility
 
     next();
   } catch (error) {

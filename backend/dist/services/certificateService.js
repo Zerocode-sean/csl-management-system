@@ -157,6 +157,38 @@ class CertificateService {
             }
             // Generate QR code
             const qrCode = await this.generateQRCode(certificateDetails.cslNumber);
+            // Get logo path and convert to base64
+            // Try multiple possible logo locations
+            const possibleLogoPaths = [
+                path.join(process.cwd(), 'logo', 'logo.jpg'), // Docker: /app/logo/logo.jpg
+                path.join(process.cwd(), '..', 'logo', 'logo.jpg'), // Parent directory
+                path.join(__dirname, '..', '..', 'logo', 'logo.jpg'), // Relative to compiled code
+            ];
+            let logoBase64 = '';
+            for (const logoPath of possibleLogoPaths) {
+                try {
+                    if (fs.existsSync(logoPath)) {
+                        const logoBuffer = fs.readFileSync(logoPath);
+                        logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`;
+                        logger_1.logger.info('Logo loaded successfully from:', logoPath);
+                        break;
+                    }
+                }
+                catch (error) {
+                    logger_1.logger.warn('Failed to load logo from:', logoPath);
+                }
+            }
+            if (!logoBase64) {
+                logger_1.logger.warn('Logo file not found in any location, using placeholder');
+                // Create a simple SVG placeholder with "EMESA" text
+                const placeholder = `data:image/svg+xml;base64,${Buffer.from(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+            <rect width="80" height="80" fill="#C41E3A"/>
+            <text x="40" y="45" font-family="Arial" font-size="18" font-weight="bold" fill="white" text-anchor="middle">EMESA</text>
+          </svg>
+        `).toString('base64')}`;
+                logoBase64 = placeholder;
+            }
             // Read template
             const templatePath = path.join(process.cwd(), 'src', 'templates', 'certificate.html');
             let template = fs.readFileSync(templatePath, 'utf-8');
@@ -177,7 +209,14 @@ class CertificateService {
                 month: 'long',
                 day: 'numeric'
             }) : 'N/A')
+                .replace(/{{START_DATE}}/g, certificateDetails.startDate ? new Date(certificateDetails.startDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : 'N/A')
+                .replace(/{{DURATION}}/g, `${certificateDetails.durationMonths || 3} months`)
                 .replace(/{{ISSUED_BY}}/g, certificateDetails.issuedBy || 'CSL Administration')
+                .replace(/{{LOGO_URL}}/g, logoBase64)
                 .replace(/{{QR_CODE}}/g, qrCode);
             // Launch puppeteer
             browser = await puppeteer.launch({
@@ -306,27 +345,31 @@ class CertificateService {
             // Get student and course details for PDF
             const detailsResult = await (0, connection_1.query)(`
         SELECT 
-          s.first_name || ' ' || s.last_name as student_name,
+          s.name as student_name,
           s.student_custom_id,
           c.title as course_name,
           c.code as course_code,
-          u.username as issued_by_name
+          c.duration_months,
+          sc.enrollment_date,
+          sc.completion_date,
+          a.username as issued_by_name
         FROM students s
         CROSS JOIN courses c
-        CROSS JOIN users u
+        CROSS JOIN admins a
+        LEFT JOIN student_courses sc ON sc.student_id = s.student_id AND sc.course_id = c.course_id
         WHERE s.student_id = $1 
           AND c.course_id = $2
-          AND u.user_id = $3
+          AND a.admin_id = $3
       `, [certificateData.student_id, certificateData.course_id, certificateData.issued_by]);
             if (detailsResult.rows.length === 0) {
                 throw (0, errorHandler_1.createError)('Student, course, or issuer not found', 404);
             }
             const details = detailsResult.rows[0];
-            // Insert certificate
+            // Insert certificate with completion_date set to now
             const result = await (0, connection_1.query)(`
         INSERT INTO certificates (
-          student_id, course_id, issued_by, csl_number, status, issued_at
-        ) VALUES ($1, $2, $3, $4, 'active', NOW())
+          student_id, course_id, issued_by, csl_number, status, issued_at, completion_date
+        ) VALUES ($1, $2, $3, $4, 'active', NOW(), NOW())
         RETURNING *
       `, [
                 certificateData.student_id,
@@ -335,6 +378,55 @@ class CertificateService {
                 cslComponents.fullCSL
             ]);
             const certificate = result.rows[0];
+            // Get dates from student_courses or calculate based on duration
+            let startDate;
+            let completionDate;
+            let durationMonths = details.duration_months || 3;
+            if (details.enrollment_date && details.completion_date) {
+                // Use actual enrollment and completion dates if available from student_courses
+                startDate = new Date(details.enrollment_date);
+                completionDate = new Date(details.completion_date);
+                // Calculate actual duration in months
+                const monthsDiff = (completionDate.getFullYear() - startDate.getFullYear()) * 12
+                    + (completionDate.getMonth() - startDate.getMonth());
+                if (monthsDiff > 0) {
+                    durationMonths = monthsDiff;
+                }
+            }
+            else if (details.enrollment_date) {
+                // If only enrollment date is available
+                startDate = new Date(details.enrollment_date);
+                completionDate = new Date(startDate);
+                completionDate.setMonth(completionDate.getMonth() + durationMonths);
+            }
+            else if (details.completion_date) {
+                // If only completion date from student_courses is available
+                completionDate = new Date(details.completion_date);
+                startDate = new Date(completionDate);
+                startDate.setMonth(startDate.getMonth() - durationMonths);
+            }
+            else if (certificate.completion_date) {
+                // Use certificate's completion_date
+                completionDate = new Date(certificate.completion_date);
+                startDate = new Date(completionDate);
+                startDate.setMonth(startDate.getMonth() - durationMonths);
+            }
+            else {
+                // Fallback: use certificate issued_at and calculate backwards
+                completionDate = new Date(certificate.issued_at);
+                startDate = new Date(completionDate);
+                startDate.setMonth(startDate.getMonth() - durationMonths);
+            }
+            // Log the calculated dates for debugging
+            logger_1.logger.info('Certificate dates calculated:', {
+                cslNumber: certificate.csl_number,
+                startDate: startDate.toISOString(),
+                completionDate: completionDate.toISOString(),
+                durationMonths,
+                hasEnrollmentDate: !!details.enrollment_date,
+                hasCompletionDate: !!details.completion_date,
+                hasCertificateCompletionDate: !!certificate.completion_date
+            });
             // Generate PDF
             const certificateDetails = {
                 cslNumber: certificate.csl_number,
@@ -343,7 +435,9 @@ class CertificateService {
                 courseName: details.course_name,
                 courseCode: details.course_code,
                 issueDate: certificate.issued_at,
-                completionDate: certificate.completion_date,
+                completionDate: completionDate,
+                startDate: startDate,
+                durationMonths: durationMonths,
                 issuedBy: details.issued_by_name
             };
             const pdfPath = await this.generatePDF(certificateDetails);

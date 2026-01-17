@@ -228,7 +228,7 @@ class StudentRepository {
         const values = [studentId];
         if (excludeId) {
             sql += ' AND id != $2';
-            values.push(excludeId);
+            values.push(String(excludeId));
         }
         try {
             const result = await (0, connection_1.query)(sql, values);
@@ -247,7 +247,7 @@ class StudentRepository {
         const values = [email];
         if (excludeId) {
             sql += ' AND id != $2';
-            values.push(excludeId);
+            values.push(String(excludeId));
         }
         try {
             const result = await (0, connection_1.query)(sql, values);

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 interface JwtPayload {
     adminId: string;
+    id?: string;
     username: string;
     email: string;
     role: string;
@@ -11,6 +12,7 @@ declare global {
     namespace Express {
         interface Request {
             admin?: JwtPayload;
+            user?: JwtPayload;
         }
     }
 }

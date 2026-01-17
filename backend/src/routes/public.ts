@@ -140,7 +140,7 @@ router.get(
         // Don't fail the request if logging fails
       });
 
-      res.json({
+      return res.json({
         success: true,
         valid: cert.status === 'active',
         data: {

@@ -3,7 +3,7 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { body, param, query as queryValidator, validationResult } from 'express-validator';
 import { StudentRepository } from '../repositories/StudentRepository';
-import { CreateStudentDTO, UpdateStudentDTO, StudentStatus } from '../types/models';
+import { CreateStudentDTO, UpdateStudentDTO, StudentStatus, StudentSearchFilter } from '../types/models';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -83,22 +83,21 @@ router.get('/',
       });
     }
 
-    const filters = {
-      search: req.query.search as string,
-      status: req.query.status as StudentStatus,
-      enrollment_year: req.query.enrollment_year as number
-    };
+    const filters: StudentSearchFilter = {};
+    if (req.query['search']) filters.search = req.query['search'] as string;
+    if (req.query['status']) filters.status = req.query['status'] as StudentStatus;
+    if (req.query['enrollment_year']) filters.enrollment_year = Number(req.query['enrollment_year']);
 
     const pagination = {
-      page: req.query.page as number || 1,
-      limit: req.query.limit as number || 20,
-      sort_by: req.query.sort_by as string || 'created_at',
-      sort_order: (req.query.sort_order as 'ASC' | 'DESC') || 'DESC'
+      page: req.query['page'] ? Number(req.query['page']) : 1,
+      limit: req.query['limit'] ? Number(req.query['limit']) : 20,
+      sort_by: (req.query['sort_by'] as string) || 'created_at',
+      sort_order: (req.query['sort_order'] as 'ASC' | 'DESC') || 'DESC'
     };
 
     const result = await studentRepo.search(filters, pagination);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Students retrieved successfully',
       data: result.data,
@@ -141,7 +140,7 @@ router.get('/:id',
       });
     }
 
-    const student = await studentRepo.findById(req.params.id as unknown as number);
+    const student = await studentRepo.findById(Number(req.params['id']));
     
     if (!student) {
       return res.status(404).json({
@@ -150,7 +149,7 @@ router.get('/:id',
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Student retrieved successfully',
       data: student
@@ -206,7 +205,7 @@ router.get('/:id',
  *         description: Student ID or email already exists
  */
 router.post('/',
-  authorizeRoles(['admin', 'instructor']),
+  authorizeRoles('admin', 'instructor'),
   [
     body('student_id').notEmpty().isString().trim(),
     body('first_name').notEmpty().isString().trim().isLength({ min: 2, max: 50 }),
@@ -263,7 +262,7 @@ router.post('/',
       created_by: req.user?.id 
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Student created successfully',
       data: student
@@ -313,7 +312,7 @@ router.post('/',
  *         description: Student not found
  */
 router.put('/:id',
-  authorizeRoles(['admin', 'instructor']),
+  authorizeRoles('admin', 'instructor'),
   [
     param('id').isInt({ min: 1 }).toInt(),
     body('first_name').optional().isString().trim().isLength({ min: 2, max: 50 }),
@@ -333,7 +332,7 @@ router.put('/:id',
       });
     }
 
-    const studentId = req.params.id as unknown as number;
+    const studentId = Number(req.params['id']);
 
     // Check if email already exists (excluding current student)
     if (req.body.email) {
@@ -363,7 +362,7 @@ router.put('/:id',
         updated_by: req.user?.id 
       });
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Student updated successfully',
         data: student
@@ -401,7 +400,7 @@ router.put('/:id',
  *         description: Student not found
  */
 router.delete('/:id',
-  authorizeRoles(['admin']),
+  authorizeRoles('admin'),
   [
     param('id').isInt({ min: 1 }).toInt()
   ],
@@ -415,7 +414,7 @@ router.delete('/:id',
       });
     }
 
-    const studentId = req.params.id as unknown as number;
+    const studentId = Number(req.params['id']);
 
     try {
       await studentRepo.delete(studentId);
@@ -425,7 +424,7 @@ router.delete('/:id',
         deleted_by: req.user?.id 
       });
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Student deleted successfully'
       });
@@ -475,7 +474,7 @@ router.get('/:id/certificates',
       });
     }
 
-    const studentId = req.params.id as unknown as number;
+    const studentId = Number(req.params['id']);
     
     const student = await studentRepo.findById(studentId);
     if (!student) {
@@ -487,7 +486,7 @@ router.get('/:id/certificates',
 
     // This would use CertificateRepository in a full implementation
     // For now, return empty array as placeholder
-    res.json({
+    return res.json({
       success: true,
       message: 'Student certificates retrieved successfully',
       data: []

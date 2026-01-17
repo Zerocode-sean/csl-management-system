@@ -78,19 +78,21 @@ router.get('/', [
             errors: errors.array()
         });
     }
-    const filters = {
-        search: req.query.search,
-        status: req.query.status,
-        enrollment_year: req.query.enrollment_year
-    };
+    const filters = {};
+    if (req.query['search'])
+        filters.search = req.query['search'];
+    if (req.query['status'])
+        filters.status = req.query['status'];
+    if (req.query['enrollment_year'])
+        filters.enrollment_year = Number(req.query['enrollment_year']);
     const pagination = {
-        page: req.query.page || 1,
-        limit: req.query.limit || 20,
-        sort_by: req.query.sort_by || 'created_at',
-        sort_order: req.query.sort_order || 'DESC'
+        page: req.query['page'] ? Number(req.query['page']) : 1,
+        limit: req.query['limit'] ? Number(req.query['limit']) : 20,
+        sort_by: req.query['sort_by'] || 'created_at',
+        sort_order: req.query['sort_order'] || 'DESC'
     };
     const result = await studentRepo.search(filters, pagination);
-    res.json({
+    return res.json({
         success: true,
         message: 'Students retrieved successfully',
         data: result.data,
@@ -128,14 +130,14 @@ router.get('/:id', [
             errors: errors.array()
         });
     }
-    const student = await studentRepo.findById(req.params.id);
+    const student = await studentRepo.findById(Number(req.params['id']));
     if (!student) {
         return res.status(404).json({
             success: false,
             message: 'Student not found'
         });
     }
-    res.json({
+    return res.json({
         success: true,
         message: 'Student retrieved successfully',
         data: student
@@ -188,7 +190,7 @@ router.get('/:id', [
  *       409:
  *         description: Student ID or email already exists
  */
-router.post('/', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
+router.post('/', (0, auth_1.authorizeRoles)('admin', 'instructor'), [
     (0, express_validator_1.body)('student_id').notEmpty().isString().trim(),
     (0, express_validator_1.body)('first_name').notEmpty().isString().trim().isLength({ min: 2, max: 50 }),
     (0, express_validator_1.body)('last_name').notEmpty().isString().trim().isLength({ min: 2, max: 50 }),
@@ -237,7 +239,7 @@ router.post('/', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
         student_id: student.student_id,
         created_by: req.user?.id
     });
-    res.status(201).json({
+    return res.status(201).json({
         success: true,
         message: 'Student created successfully',
         data: student
@@ -284,7 +286,7 @@ router.post('/', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
  *       404:
  *         description: Student not found
  */
-router.put('/:id', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
+router.put('/:id', (0, auth_1.authorizeRoles)('admin', 'instructor'), [
     (0, express_validator_1.param)('id').isInt({ min: 1 }).toInt(),
     (0, express_validator_1.body)('first_name').optional().isString().trim().isLength({ min: 2, max: 50 }),
     (0, express_validator_1.body)('last_name').optional().isString().trim().isLength({ min: 2, max: 50 }),
@@ -301,7 +303,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
             errors: errors.array()
         });
     }
-    const studentId = req.params.id;
+    const studentId = Number(req.params['id']);
     // Check if email already exists (excluding current student)
     if (req.body.email) {
         const existingEmail = await studentRepo.existsByEmail(req.body.email, studentId);
@@ -326,7 +328,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
             student_id: studentId,
             updated_by: req.user?.id
         });
-        res.json({
+        return res.json({
             success: true,
             message: 'Student updated successfully',
             data: student
@@ -362,7 +364,7 @@ router.put('/:id', (0, auth_1.authorizeRoles)(['admin', 'instructor']), [
  *       404:
  *         description: Student not found
  */
-router.delete('/:id', (0, auth_1.authorizeRoles)(['admin']), [
+router.delete('/:id', (0, auth_1.authorizeRoles)('admin'), [
     (0, express_validator_1.param)('id').isInt({ min: 1 }).toInt()
 ], (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);
@@ -373,14 +375,14 @@ router.delete('/:id', (0, auth_1.authorizeRoles)(['admin']), [
             errors: errors.array()
         });
     }
-    const studentId = req.params.id;
+    const studentId = Number(req.params['id']);
     try {
         await studentRepo.delete(studentId);
         logger_1.logger.info('Student deleted', {
             student_id: studentId,
             deleted_by: req.user?.id
         });
-        res.json({
+        return res.json({
             success: true,
             message: 'Student deleted successfully'
         });
@@ -426,7 +428,7 @@ router.get('/:id/certificates', [
             errors: errors.array()
         });
     }
-    const studentId = req.params.id;
+    const studentId = Number(req.params['id']);
     const student = await studentRepo.findById(studentId);
     if (!student) {
         return res.status(404).json({
@@ -436,7 +438,7 @@ router.get('/:id/certificates', [
     }
     // This would use CertificateRepository in a full implementation
     // For now, return empty array as placeholder
-    res.json({
+    return res.json({
         success: true,
         message: 'Student certificates retrieved successfully',
         data: []

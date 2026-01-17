@@ -85,7 +85,9 @@ class CertificateGeneratorService {
             .replace(/{{COURSE_NAME}}/g, data.courseName)
             .replace(/{{COURSE_CODE}}/g, data.courseName) // Using courseName as placeholder for technologies
             .replace(/{{COMPLETION_DATE}}/g, data.completionDate)
+            .replace(/{{START_DATE}}/g, data.startDate)
             .replace(/{{ISSUE_DATE}}/g, data.issueDate)
+            .replace(/{{DURATION}}/g, data.duration)
             .replace(/{{ISSUED_BY}}/g, data.directorName)
             .replace(/{{QR_CODE}}/g, data.qrCodeDataUrl)
             .replace(/{{STUDENT_ID}}/g, '') // Not available in current data structure
@@ -116,6 +118,26 @@ class CertificateGeneratorService {
             }
             const student = studentResult.rows[0];
             const course = courseResult.rows[0];
+            // Get student_courses enrollment data
+            const enrollmentResult = await client.query('SELECT enrollment_date, completion_date FROM student_courses WHERE student_id = $1 AND course_id = $2', [studentId, courseId]);
+            // Calculate dates
+            const completionDate = new Date();
+            const durationMonths = course.duration_months || 3;
+            let startDate = new Date(completionDate);
+            startDate.setMonth(startDate.getMonth() - durationMonths);
+            // If enrollment data exists, use it
+            if (enrollmentResult.rows.length > 0 && enrollmentResult.rows[0].enrollment_date) {
+                startDate = new Date(enrollmentResult.rows[0].enrollment_date);
+                if (enrollmentResult.rows[0].completion_date) {
+                    const actualCompletion = new Date(enrollmentResult.rows[0].completion_date);
+                    const monthsDiff = (actualCompletion.getFullYear() - startDate.getFullYear()) * 12
+                        + (actualCompletion.getMonth() - startDate.getMonth());
+                    if (monthsDiff > 0) {
+                        // Use actual duration
+                        course.duration_months = monthsDiff;
+                    }
+                }
+            }
             // Check for existing certificate
             const existingCert = await client.query('SELECT csl_number FROM certificates WHERE student_id = $1 AND course_id = $2 AND status = $3', [studentId, courseId, 'active']);
             if (existingCert.rows.length > 0) {
@@ -131,8 +153,22 @@ class CertificateGeneratorService {
             const certificateData = {
                 studentName: student.name.toUpperCase(),
                 courseName: course.title,
-                completionDate: new Date().toLocaleDateString('en-US'),
-                issueDate: new Date().toLocaleDateString('en-US'),
+                completionDate: completionDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }),
+                startDate: startDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }),
+                issueDate: new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }),
+                duration: `${course.duration_months || 3} months`,
                 cslNumber: cslNumber,
                 directorName: 'CPA EMELDA NYONGESA',
                 qrCodeDataUrl: qrCodeDataUrl

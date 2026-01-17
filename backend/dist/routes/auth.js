@@ -124,10 +124,7 @@ router.post('/login', rateLimiter_1.authRateLimiter, [
             });
             throw (0, errorHandler_1.createError)('Too many failed attempts. Account locked temporarily.', 423);
         }
-        throw (0, errorHandler_1.createError)('Invalid email or password', 401, undefined, {
-            failedAttempts,
-            maxAttempts: config_1.config.security.maxLoginAttempts
-        });
+        throw (0, errorHandler_1.createError)('Invalid email or password', 401);
     }
     // Reset failed login attempts and update last login
     await (0, connection_1.query)(`

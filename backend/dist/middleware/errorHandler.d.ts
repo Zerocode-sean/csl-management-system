@@ -12,5 +12,5 @@ export declare const createError: (message: string, statusCode?: number, errors?
     field: string;
     message: string;
 }>) => ApiError;
-export declare const asyncHandler: (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => (req: Request, res: Response, next: NextFunction) => void;
+export declare const asyncHandler: (fn: (req: Request, res: Response, next: NextFunction) => Promise<void | any>) => (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=errorHandler.d.ts.map
