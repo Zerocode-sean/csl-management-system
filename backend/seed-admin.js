@@ -29,7 +29,15 @@ const usersToSeed = [
     role: 'admin',
     firstName: 'Sean',
     lastName: 'Dev'
-  }
+  },
+{
+   username: 'Emelda wafula',
+   email: 'emesaresearch@gmail.com',
+   password: 'Emeldawafula@***',
+   role: 'admin'
+   firstName: 'Emelda'
+   lastName: 'Wafula'
+},
 ];
 const saltRounds = process.env.SALT_ROUNDS ? parseInt(process.env.SALT_ROUNDS) : 12;
 
